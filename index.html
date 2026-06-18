@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PayShare</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Public+Sans:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#20283C;--ink-soft:#5A6377;--paper:#FCFBF7;--kraft:#E7E2D6;--kraft-line:#CFC8B7;
+    --stamp:#C8453A;--stamp-deep:#9E3329;--green:#2E7D5B;--green-soft:#E4F0E9;--red-soft:#F7E5E2;
+    --line:#D9D3C5;--shadow:0 1px 0 rgba(32,40,60,.04), 0 8px 24px -16px rgba(32,40,60,.35);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{font-family:'Public Sans',system-ui,sans-serif;background:var(--kraft);color:var(--ink);line-height:1.45;min-height:100vh;
+    background-image:radial-gradient(rgba(32,40,60,.035) 1px,transparent 1px);background-size:18px 18px;}
+  .wrap{max-width:560px;margin:0 auto;padding:18px 16px 120px}
+  h1,h2,h3,.disp{font-family:'Bricolage Grotesque',sans-serif}
+  .mono{font-family:'Space Mono',monospace}
+
+  /* ── auth / group screens ── */
+  .screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;
+    background:var(--kraft);background-image:radial-gradient(rgba(32,40,60,.035) 1px,transparent 1px);
+    background-size:18px 18px;z-index:200;overflow-y:auto;}
+  .auth-card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:28px 24px;
+    width:100%;max-width:380px;box-shadow:var(--shadow);}
+  .auth-logo{font-family:'Bricolage Grotesque',sans-serif;font-size:36px;font-weight:800;
+    color:var(--ink);letter-spacing:-.02em;margin-bottom:4px;}
+  .auth-sub{font-size:13.5px;color:var(--ink-soft);margin-bottom:20px;}
+  .auth-tabs{display:flex;gap:4px;background:var(--kraft);border-radius:10px;padding:4px;margin-bottom:18px;}
+  .auth-tab{flex:1;border:none;background:none;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;
+    font-size:13.5px;color:var(--ink-soft);padding:8px;border-radius:7px;cursor:pointer;transition:.12s;}
+  .auth-tab[aria-selected="true"]{background:var(--ink);color:var(--paper);}
+  .auth-err{color:var(--stamp);font-size:12.5px;margin-top:8px;min-height:18px;line-height:1.4;}
+  .group-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+  .group-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);
+    border-radius:10px;cursor:pointer;background:var(--paper);transition:.12s;}
+  .group-item:hover{border-color:var(--ink);}
+  .group-item .g-name{font-weight:700;font-size:15px;}
+  .group-item .g-code{font-family:'Space Mono',monospace;font-size:11px;color:var(--ink-soft);}
+  .group-item .g-arr{margin-left:auto;color:var(--ink-soft);font-size:18px;}
+  .divider{display:flex;align-items:center;gap:10px;color:var(--ink-soft);font-size:12px;margin:14px 0;}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line);}
+
+  /* ── masthead ── */
+  .masthead{background:var(--ink);color:var(--paper);border-radius:14px;padding:18px 18px 14px;
+    box-shadow:var(--shadow);position:relative;overflow:hidden;}
+  .masthead::after{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;
+    border:2px solid rgba(252,251,247,.12);border-radius:50%;}
+  .kicker{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:rgba(252,251,247,.6);
+    font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .kicker-brand{font-size:13px;letter-spacing:.12em;color:var(--paper);font-weight:800;}
+  .gear{background:rgba(252,251,247,.12);border:none;color:var(--paper);width:30px;height:30px;
+    border-radius:8px;cursor:pointer;font-size:15px;margin-left:auto;}
+  .logout-btn{background:rgba(252,251,247,.12);border:none;color:var(--paper);border-radius:7px;
+    padding:5px 9px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Public Sans',sans-serif;margin-left:4px;}
+  .logout-btn:hover{background:rgba(252,251,247,.22);}
+  .trip-name{font-size:30px;font-weight:800;line-height:1.05;margin-top:4px;letter-spacing:-.01em}
+  .trip-name[contenteditable]{outline:none;border-bottom:1px dashed transparent;cursor:text}
+  .trip-name[contenteditable]:focus{border-bottom-color:rgba(252,251,247,.4)}
+  .total-row{display:flex;align-items:baseline;gap:8px;margin-top:12px}
+  .total-amt{font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:var(--paper)}
+  .total-lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(252,251,247,.55)}
+  .usd-pill{margin-left:auto;background:rgba(252,251,247,.1);color:var(--paper);border:1px solid rgba(252,251,247,.2);
+    border-radius:8px;padding:5px 10px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.04em}
+  .code-row{display:flex;align-items:center;gap:8px;margin-top:11px;font-size:11.5px;color:rgba(252,251,247,.7)}
+  .sync-dot{width:8px;height:8px;border-radius:50%;background:#7FD8AC;flex:0 0 auto}
+  .sync-dot.off{background:#F0A79E}.sync-dot.local{background:#E6C77A}
+  .code-row .copy{margin-left:auto;background:rgba(252,251,247,.12);border:none;color:var(--paper);
+    border-radius:7px;padding:5px 9px;font-size:11px;font-weight:600;cursor:pointer}
+
+  /* ── tabs ── */
+  .tabs{display:flex;gap:4px;background:var(--paper);border:1px solid var(--line);border-radius:12px;
+    padding:4px;margin:14px 0;box-shadow:var(--shadow)}
+  .tab{flex:1;border:none;background:none;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;
+    font-size:13.5px;color:var(--ink-soft);padding:9px 4px;border-radius:8px;cursor:pointer;transition:.15s}
+  .tab[aria-selected="true"]{background:var(--ink);color:var(--paper)}
+
+  /* ── cards ── */
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px;
+    box-shadow:var(--shadow);margin-bottom:14px}
+  .card h2{font-size:17px;font-weight:700;margin-bottom:2px;letter-spacing:-.01em}
+  .card .sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:14px}
+
+  /* ── my card ── */
+  #myCard{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  #myCard h2{color:var(--paper)}
+  .my-head{font-family:'Space Mono',monospace;font-size:24px;font-weight:700;margin:2px 0 2px}
+  .my-head.pos{color:#7FD8AC}.my-head.neg{color:#F0A79E}.my-head.zero{color:rgba(252,251,247,.7)}
+  .my-sub{font-size:12.5px;color:rgba(252,251,247,.6);margin-bottom:12px}
+  .my-line{display:flex;align-items:center;gap:10px;background:rgba(252,251,247,.06);
+    border:1px solid rgba(252,251,247,.14);border-radius:9px;padding:11px 13px;margin-bottom:8px}
+  .my-line .t{font-size:14px;font-weight:600}
+  .my-line .v{margin-left:auto;font-family:'Space Mono',monospace;font-weight:700;font-size:15px}
+  .my-line .v.in{color:#7FD8AC}.my-line .v.out{color:#F0A79E}
+
+  /* ── settle stubs ── */
+  .stub{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+  .stub::before,.stub::after{content:"";position:absolute;width:14px;height:14px;border-radius:50%;
+    background:var(--kraft);border:1px solid var(--line);top:50%;transform:translateY(-50%)}
+  .stub::before{left:-8px}.stub::after{right:-8px}
+  .stub.mine{border-color:var(--ink);box-shadow:0 0 0 1.5px var(--ink) inset}
+  .stub .who{font-weight:600;font-size:14.5px}
+  .stub .who .arrow{color:var(--stamp);font-weight:700;margin:0 6px}
+  .stub .amt{margin-left:auto;font-family:'Space Mono',monospace;font-weight:700;font-size:16px}
+  .mark-paid{flex:0 0 auto;margin-left:14px;border:1px solid var(--green);background:var(--green-soft);
+    color:var(--green);border-radius:8px;padding:8px 12px;font-family:'Bricolage Grotesque',sans-serif;
+    font-weight:700;font-size:12.5px;cursor:pointer;transition:.12s}
+  .mark-paid:hover{background:var(--green);color:#fff}
+  .settled-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .settled-row:last-child{border-bottom:none}
+  .settled-row .check{width:22px;height:22px;flex:0 0 auto;border-radius:50%;background:var(--green);
+    color:#fff;display:grid;place-items:center;font-size:12px;font-weight:700}
+  .settled-row .who{font-size:14px;font-weight:600;color:var(--ink-soft)}
+  .settled-row .amt{margin-left:auto;font-family:'Space Mono',monospace;font-weight:700;font-size:14px;color:var(--green)}
+  .settled-row .undo{background:none;border:none;color:var(--ink-soft);font-size:12px;font-weight:600;cursor:pointer}
+  .settled-row .undo:hover{color:var(--stamp)}
+
+  /* ── net grid ── */
+  .net-grid{display:flex;flex-direction:column;gap:8px}
+  .net-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);
+    border-radius:10px;background:var(--paper)}
+  .net-row.mine{border-color:var(--ink);box-shadow:0 0 0 1.5px var(--ink) inset}
+  .avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:700;
+    font-family:'Bricolage Grotesque',sans-serif;font-size:14px;color:var(--paper);flex:0 0 auto}
+  .net-name{font-weight:600;font-size:14.5px}
+  .you-tag{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:var(--ink);
+    color:var(--paper);border-radius:5px;padding:2px 6px;margin-left:6px}
+  .net-val{font-family:'Space Mono',monospace;font-weight:700;font-size:15px}
+  .net-val.pos{color:var(--green)}.net-val.neg{color:var(--stamp)}.net-val.zero{color:var(--ink-soft)}
+  .net-tag{font-size:11px;color:var(--ink-soft);display:block;text-align:right}
+
+  /* ── form elements ── */
+  label.fl{display:block;font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--ink-soft);
+    margin:12px 0 5px;text-transform:uppercase}
+  input[type=text],input[type=number],input[type=date],input[type=password],select{
+    width:100%;font-family:'Public Sans',sans-serif;font-size:15px;color:var(--ink);background:#fff;
+    border:1px solid var(--line);border-radius:9px;padding:11px 12px}
+  input:focus,select:focus{outline:none;border-color:var(--ink)}
+  .amt-input-wrap{position:relative}
+  .amt-input-wrap .sym{position:absolute;left:12px;top:50%;transform:translateY(-50%);
+    color:var(--ink-soft);font-family:'Space Mono',monospace;font-size:15px}
+  .amt-input-wrap input{padding-left:34px;font-family:'Space Mono',monospace;font-size:18px;font-weight:700}
+  .row2{display:flex;gap:10px}.row2>*{flex:1}
+  .row2.amtcur>:first-child{flex:1.6}.row2.amtcur>:last-child{flex:1}
+
+  /* ── scan zone ── */
+  .scan-zone{border:1.5px dashed var(--kraft-line);border-radius:11px;padding:16px;text-align:center;
+    cursor:pointer;transition:.15s;background:#fff;margin-bottom:4px}
+  .scan-zone:hover{border-color:var(--ink);background:#fffdf8}
+  .scan-zone .si{font-size:24px}
+  .scan-zone .st{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:14.5px;margin-top:4px}
+  .scan-zone .sx{font-size:12px;color:var(--ink-soft);margin-top:2px}
+  .scan-zone.busy{pointer-events:none;opacity:.85}
+  .spinner{display:inline-block;width:18px;height:18px;border:2.5px solid var(--kraft-line);
+    border-top-color:var(--stamp);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .scan-err{color:var(--stamp);font-size:12.5px;margin-top:6px}
+
+  /* ── rate line ── */
+  .rate-line{margin-top:8px;font-size:12.5px;font-family:'Space Mono',monospace;color:var(--ink-soft);
+    background:var(--kraft);border:1px solid var(--line);border-radius:9px;padding:9px 11px;line-height:1.5}
+  .rate-line .usd{color:var(--green);font-weight:700}
+  .rate-line .manual-rate{display:flex;align-items:center;gap:7px;margin-top:7px;flex-wrap:wrap}
+  .rate-line .manual-rate input{width:110px;padding:7px 9px;font-size:14px}
+
+  /* ── chips / seg ── */
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-size:13px;
+    font-weight:600;color:var(--ink-soft);cursor:pointer;user-select:none;transition:.12s}
+  .chip[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .chip.city[aria-pressed="true"]{background:var(--stamp);border-color:var(--stamp)}
+  .seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-top:4px}
+  .seg button{flex:1;border:none;background:#fff;padding:9px;font-size:13px;font-weight:600;
+    color:var(--ink-soft);cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+
+  /* ── custom split ── */
+  .custom-split{margin-top:10px;border-top:1px dashed var(--line);padding-top:10px}
+  .cs-row{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+  .cs-row .nm{font-size:14px;font-weight:600;flex:1}
+  .cs-row .amt-input-wrap{width:130px}
+  .cs-row input{font-family:'Space Mono',monospace;font-weight:700;font-size:14px}
+  .cs-remain{font-size:12.5px;font-family:'Space Mono',monospace;text-align:right;margin-top:4px}
+
+  /* ── buttons ── */
+  .btn{width:100%;border:none;background:var(--stamp);color:#fff;font-family:'Bricolage Grotesque',sans-serif;
+    font-weight:700;font-size:15px;padding:13px;border-radius:10px;cursor:pointer;margin-top:18px;
+    box-shadow:0 6px 16px -8px var(--stamp)}
+  .btn:hover{background:var(--stamp-deep)}
+  .btn:disabled{background:var(--kraft-line);box-shadow:none;cursor:not-allowed}
+  .btn.dark{background:var(--ink);box-shadow:none}.btn.dark:hover{background:#2b3550}
+  .btn.ghost{background:none;color:var(--ink);box-shadow:none;border:1px solid var(--line)}.btn.ghost:hover{background:var(--kraft)}
+
+  /* ── crew ── */
+  .crew-add{display:flex;gap:8px}.crew-add input{flex:1}
+  .crew-add button{flex:0 0 auto;background:var(--ink);color:#fff;border:none;border-radius:9px;
+    padding:0 14px;font-size:15px;font-weight:700;cursor:pointer}
+  .member-li{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .member-li:last-child{border-bottom:none}
+  .member-li .nm{font-weight:600;font-size:15px}
+
+  /* ── expense row ── */
+  .exp{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);
+    border-radius:10px;margin-bottom:9px;background:var(--paper)}
+  .exp .ic{width:38px;height:38px;border-radius:9px;background:var(--kraft);display:grid;place-items:center;font-size:18px;flex:0 0 auto}
+  .exp .meta .d{font-weight:600;font-size:14.5px}
+  .exp .meta .s{font-size:12px;color:var(--ink-soft);margin-top:1px}
+  .exp .ea{margin-left:auto;text-align:right}
+  .exp .ea .v{font-family:'Space Mono',monospace;font-weight:700;font-size:15px}
+  .exp .ea .o{font-size:11px;color:var(--ink-soft);font-family:'Space Mono',monospace}
+  .exp .ea .del{background:none;border:none;color:var(--ink-soft);font-size:11.5px;cursor:pointer;margin-top:2px}
+  .exp .ea .del:hover{color:var(--stamp)}
+
+  /* ── misc ── */
+  .empty{text-align:center;padding:30px 16px;color:var(--ink-soft)}
+  .empty .big{font-size:32px;margin-bottom:8px}
+  .empty .t{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;color:var(--ink);font-size:16px;margin-bottom:4px}
+  .empty .x{font-size:13.5px}
+  .allset{display:flex;gap:12px;align-items:center;background:var(--green-soft);border:1px solid #BFE0CE;
+    border-radius:10px;padding:14px 16px}
+  .allset .em{font-size:24px}
+  .allset .t{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;color:var(--green)}
+  .allset .x{font-size:13px;color:#3C6B57}
+  .overlay{position:fixed;inset:0;background:rgba(32,40,60,.55);display:grid;place-items:center;
+    padding:18px;z-index:80;backdrop-filter:blur(3px)}
+  .sheet{background:var(--kraft);border-radius:16px;max-width:440px;width:100%;padding:22px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.5);max-height:90vh;overflow:auto}
+  .sheet h2{font-family:'Bricolage Grotesque',sans-serif;font-size:22px;font-weight:800;letter-spacing:-.01em}
+  .sheet p{font-size:13.5px;color:var(--ink-soft);margin-top:6px;line-height:1.5}
+  .modecard{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:14px}
+  .modecard .h{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:15px}
+  .closex{float:right;background:none;border:none;font-size:20px;color:var(--ink-soft);cursor:pointer;line-height:1}
+  .save-flag{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);
+    color:var(--paper);font-size:12.5px;font-weight:600;padding:9px 16px;border-radius:999px;
+    opacity:0;transition:.25s;pointer-events:none;z-index:90}
+  .save-flag.show{opacity:1}
+  .hidden{display:none}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}.spinner{animation:none}}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ AUTH SCREEN ═══════════════════ -->
+<div id="authScreen" class="screen">
+  <div class="auth-card">
+    <div class="auth-logo">PayShare</div>
+    <div class="auth-sub">Split expenses with your crew</div>
+    <div class="auth-tabs">
+      <button class="auth-tab" data-auth="login" aria-selected="true">Log in</button>
+      <button class="auth-tab" data-auth="signup" aria-selected="false">Sign up</button>
+    </div>
+    <form id="authForm" onsubmit="return false">
+      <label class="fl" for="authUser">Username</label>
+      <input type="text" id="authUser" placeholder="your_username" autocomplete="username" autocapitalize="none" spellcheck="false">
+      <label class="fl" for="authPass">Password</label>
+      <input type="password" id="authPass" placeholder="password" autocomplete="current-password">
+      <div class="auth-err" id="authErr"></div>
+      <button class="btn" id="authSubmit" style="margin-top:14px">Log in</button>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════ GROUP SCREEN ═══════════════════ -->
+<div id="groupScreen" class="screen hidden">
+  <div class="auth-card" style="max-width:420px">
+    <div class="auth-logo">PayShare</div>
+    <div class="auth-sub">Welcome, <strong id="welcomeName"></strong> — pick or start a group</div>
+    <div class="group-list" id="groupList"></div>
+    <button class="btn dark" id="createGroupBtn" style="margin-top:0">+ Create a new group</button>
+    <div class="divider">or join an existing one</div>
+    <label class="fl" for="joinCode">Group code</label>
+    <div class="crew-add">
+      <input type="text" id="joinCode" placeholder="e.g. EUROPE24" autocapitalize="characters" spellcheck="false">
+      <button id="joinBtn">→</button>
+    </div>
+    <div class="auth-err" id="groupErr"></div>
+    <button class="btn ghost" id="groupLogoutBtn" style="margin-top:14px;font-size:13px">Log out</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ SETTINGS MODAL ═══════════════════ -->
+<div class="overlay hidden" id="settings">
+  <div class="sheet">
+    <button class="closex" id="setClose">×</button>
+    <h2>Settings</h2>
+    <div class="modecard">
+      <div class="h">Invite link</div>
+      <p>Send this to your crew — anyone who opens it and logs in joins this group automatically.</p>
+      <input type="text" id="shareUrl" readonly>
+      <button class="btn dark" id="copyShare" style="margin-top:8px">Copy link</button>
+    </div>
+    <div class="modecard">
+      <div class="h">Receipt scanning (optional)</div>
+      <p>Reading a receipt photo needs an Anthropic API key. Stored only in this browser, never shared.</p>
+      <input type="password" id="apiKey" placeholder="sk-ant-… (optional)">
+      <button class="btn ghost" id="saveKey" style="margin-top:8px">Save key on this device</button>
+    </div>
+    <button class="btn ghost" id="switchGroup" style="margin-top:6px">Switch group</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ MAIN APP ═══════════════════ -->
+<div class="wrap hidden" id="app">
+  <header class="masthead">
+    <div class="kicker">
+      <span class="kicker-brand">PayShare</span>
+      <span id="groupCodeBadge" style="font-family:'Space Mono',monospace;font-size:10px;
+        background:rgba(252,251,247,.14);border:1px solid rgba(252,251,247,.2);border-radius:6px;
+        padding:2px 7px;letter-spacing:.06em;"></span>
+      <span id="loggedUserLabel" style="font-size:10px;opacity:.65"></span>
+      <button class="gear" id="gearBtn" aria-label="Settings" style="margin-left:auto">⚙</button>
+      <button class="logout-btn" id="logoutBtn">Log out</button>
+    </div>
+    <div class="trip-name" id="tripName" contenteditable="true" spellcheck="false">PayShare</div>
+    <div class="total-row">
+      <span class="total-amt" id="totalSpent">—</span>
+      <span class="total-lbl">total tracked</span>
+      <span class="usd-pill">settles in USD</span>
+    </div>
+    <div class="code-row">
+      <span class="sync-dot" id="syncDot"></span>
+      <span id="syncText">Connecting…</span>
+      <button class="copy" id="copyShare2">Copy invite</button>
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true"  data-tab="settle">Settle Up</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="add">Add</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="history">History</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="crew">Crew</button>
+  </div>
+
+  <section id="panel-settle">
+    <div class="card hidden" id="myCard">
+      <h2 id="myCardTitle">Your tab</h2>
+      <div id="mySummary"></div>
+    </div>
+    <div class="card">
+      <h2>Who pays who</h2>
+      <p class="sub">The fewest payments that clear every debt, all in USD.</p>
+      <div id="settleList"></div>
+    </div>
+    <div class="card">
+      <h2>Running balance</h2>
+      <p class="sub">A plus means the crew owes that person. A minus means they owe the pot.</p>
+      <div class="net-grid" id="netGrid"></div>
+    </div>
+    <div class="card hidden" id="settledCard">
+      <h2>Settled up</h2>
+      <p class="sub">Payments that already changed hands. Tap undo if you made a mistake.</p>
+      <div id="settledList"></div>
+    </div>
+  </section>
+
+  <section id="panel-add" class="hidden">
+    <div class="card">
+      <h2>Add an expense</h2>
+      <p class="sub">Scan a screenshot, or just type it in. Anything not in dollars converts at that day's rate.</p>
+      <div class="scan-zone" id="scanZone">
+        <div class="si" id="scanIcon">📸</div>
+        <div class="st" id="scanTitle">Scan a receipt or payment screenshot</div>
+        <div class="sx" id="scanSub">Pulls out the total, currency, and what it was for</div>
+        <div class="scan-err hidden" id="scanErr"></div>
+      </div>
+      <input type="file" id="scanInput" accept="image/*" class="hidden">
+      <label class="fl" for="expDesc">What was it</label>
+      <input type="text" id="expDesc" placeholder="Dinner, train tickets, Airbnb…">
+      <div class="row2 amtcur">
+        <div>
+          <label class="fl" for="expAmt">Amount</label>
+          <div class="amt-input-wrap"><span class="sym" id="amtSym">€</span><input type="number" id="expAmt" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div>
+        </div>
+        <div>
+          <label class="fl" for="expCur">Currency</label>
+          <select id="expCur"></select>
+        </div>
+      </div>
+      <div class="row2">
+        <div><label class="fl" for="expPayer">Paid by</label><select id="expPayer"></select></div>
+        <div><label class="fl" for="expDate">Date</label><input type="date" id="expDate"></div>
+      </div>
+      <div class="rate-line" id="rateLine">Tracked in USD.</div>
+      <label class="fl">City <span style="text-transform:none;font-weight:400">(optional)</span></label>
+      <div class="chips" id="cityChips"></div>
+      <label class="fl">Split between</label>
+      <div class="chips" id="partChips"></div>
+      <label class="fl">How</label>
+      <div class="seg" id="splitSeg">
+        <button data-mode="even"   aria-pressed="true">Split evenly</button>
+        <button data-mode="custom" aria-pressed="false">Custom amounts</button>
+      </div>
+      <div class="custom-split hidden" id="customSplit"></div>
+      <button class="btn" id="addBtn">Add to ledger</button>
+    </div>
+  </section>
+
+  <section id="panel-history" class="hidden">
+    <div class="card">
+      <h2>Expense history</h2>
+      <p class="sub">Everything logged, newest first. Dollar value is locked at the day's rate.</p>
+      <div id="histList"></div>
+    </div>
+  </section>
+
+  <section id="panel-crew" class="hidden">
+    <div class="card">
+      <h2>The crew</h2>
+      <p class="sub">Share this link to add people — anyone who opens it and logs in joins automatically.</p>
+      <div class="crew-add" style="margin-bottom:4px">
+        <input type="text" id="inviteLinkInput" readonly style="font-size:12px;color:var(--ink-soft)">
+        <button id="copyInviteBtn">Copy</button>
+      </div>
+      <div id="memberList" style="margin-top:12px"></div>
+    </div>
+  </section>
+</div>
+
+<div class="save-flag" id="saveFlag">Saved</div>
+
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   CONFIG  ←  paste your values from Supabase → Project Settings → API
+   ══════════════════════════════════════════════════════════════ */
+const SUPABASE_URL      = 'YOUR_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ══ constants ══ */
+const ITINERARY    = ["Copenhagen","Amsterdam","Berlin","Prague","Munich","Venice","Florence","Cinque Terre","Paris","Nice","Barcelona","Porto","Lisbon"];
+const CURRENCIES   = ["EUR","USD","GBP","DKK","CZK","CHF","SEK","NOK","PLN","HUF"];
+const CUR_SYM      = {EUR:"€",USD:"$",GBP:"£",DKK:"kr",CZK:"Kč",CHF:"CHF",SEK:"kr",NOK:"kr",PLN:"zł",HUF:"Ft"};
+const AVATAR_COLORS= ["#C8453A","#2E7D5B","#3A5DA8","#B5762B","#7A4B9E","#1F8A8A","#A6453F","#4A7C3F"];
+const EXP_ICONS    = ["🍽️","🚆","🏨","🍻","🛒","🎟️","☕","⛽","🚕","🥐"];
+
+/* ══ app state ══ */
+let state  = {tripName:"PayShare", members:[], expenses:[], payments:[], fxCache:{}};
+let ui     = {tab:"settle", selectedCity:null, participants:new Set(), splitMode:"even",
+              customSplits:{}, currency:"EUR", date:todayISO(), liveRate:null,
+              rateLoading:false, manualRate:"", scanBusy:false, scanError:null};
+let GROUP_ID = null, GROUP_CODE = null, meId = null;
+let rateReqId = 0, partsInit = false, store = null;
+
+const $ = id => document.getElementById(id);
+function uid()        { return crypto.randomUUID(); }
+function todayISO()   { const d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
+function dateShort(s) { try{return new Date(s+"T00:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric"});}catch(e){return s;} }
+function round2(n)    { return Math.round((n+Number.EPSILON)*100)/100; }
+function fmtUSD(n)    { try{return new Intl.NumberFormat(undefined,{style:"currency",currency:"USD"}).format(n||0);}catch(e){return "$"+(n||0).toFixed(2);} }
+function fmtOrig(n,c) { const s=CUR_SYM[c]||""; return (c==="USD"||c==="GBP"||c==="EUR")?s+(n||0).toFixed(2):(n||0).toFixed(2)+" "+(s||c); }
+function initials(nm) { const p=(nm||"").trim().split(/\s+/); return ((p[0]||"")[0]||"?").toUpperCase()+((p[1]||"")[0]||"").toUpperCase(); }
+function colorFor(id) { const i=state.members.findIndex(m=>m.id===id); return AVATAR_COLORS[(i<0?0:i)%AVATAR_COLORS.length]; }
+function nameOf(id)   { const m=state.members.find(m=>m.id===id); return m?m.name:"?"; }
+function escHtml(s)   { return (s||"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function flashSaved() { const f=$("saveFlag");f.classList.add("show");setTimeout(()=>f.classList.remove("show"),900); }
+function shareLink()  { const u=new URL(location.href); u.hash=GROUP_CODE||""; return u.toString(); }
+function sanitizeCode(s){ return (s||"").toUpperCase().replace(/[^A-Z0-9_-]/g,"").slice(0,24); }
+
+/* ══════════════════════════════════════════════════════════════
+   AUTH
+   ══════════════════════════════════════════════════════════════ */
+let authMode = "login";
+
+document.querySelectorAll(".auth-tab").forEach(b => b.onclick = () => {
+  authMode = b.dataset.auth;
+  document.querySelectorAll(".auth-tab").forEach(t => t.setAttribute("aria-selected", t.dataset.auth === authMode));
+  $("authSubmit").textContent = authMode === "login" ? "Log in" : "Create account";
+  $("authPass").autocomplete  = authMode === "login" ? "current-password" : "new-password";
+  $("authErr").textContent = "";
+});
+
+$("authForm").onsubmit = async e => {
+  e.preventDefault();
+  const username = $("authUser").value.trim().toLowerCase().replace(/\s+/g,"_");
+  const password = $("authPass").value;
+  $("authErr").textContent = "";
+  if (!username)          { $("authErr").textContent = "Enter a username."; return; }
+  if (password.length < 6){ $("authErr").textContent = "Password must be at least 6 characters."; return; }
+
+  $("authSubmit").disabled = true;
+  $("authSubmit").textContent = "…";
+  const email = username + "@payshare.local";
+
+  try {
+    if (authMode === "signup") {
+      /* check username availability before creating the auth user */
+      const {data: existing} = await sb.from("profiles").select("id").eq("username", username).maybeSingle();
+      if (existing) throw new Error("That username is taken — try logging in instead.");
+    }
+
+    let result;
+    if (authMode === "login") {
+      result = await sb.auth.signInWithPassword({email, password});
+    } else {
+      result = await sb.auth.signUp({email, password});
+    }
+    if (result.error) throw result.error;
+    if (!result.data.user) throw new Error("No user returned — check your Supabase email settings.");
+
+    meId = result.data.user.id;
+    await afterAuth(result.data.user);
+  } catch(err) {
+    $("authErr").textContent = friendlyAuthErr(err);
+  } finally {
+    $("authSubmit").disabled = false;
+    $("authSubmit").textContent = authMode === "login" ? "Log in" : "Create account";
+  }
+};
+
+function friendlyAuthErr(err) {
+  const m = (err.message || "").toLowerCase();
+  if (m.includes("invalid login") || m.includes("invalid credentials")) return "Wrong username or password.";
+  if (m.includes("already registered") || m.includes("user already registered")) return "That username is taken — try logging in instead.";
+  if (m.includes("email not confirmed")) return "Signup not confirmed — disable email confirmation in your Supabase dashboard under Auth → Settings.";
+  return err.message || "Something went wrong.";
+}
+
+async function afterAuth(user) {
+  meId = user.id;
+  const uname = user.email.split("@")[0];
+  $("welcomeName").textContent      = uname;
+  $("loggedUserLabel").textContent  = uname;
+
+  /* if URL has a group code, try to auto-join that group */
+  const hashCode = sanitizeCode(location.hash.slice(1));
+  if (hashCode) {
+    const joined = await tryJoinByCode(hashCode);
+    if (joined) { showApp(); return; }
+  }
+  await showGroupScreen();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   GROUP SELECTION
+   ══════════════════════════════════════════════════════════════ */
+async function showGroupScreen() {
+  $("authScreen").classList.add("hidden");
+  $("app").classList.add("hidden");
+  $("groupScreen").classList.remove("hidden");
+  await renderGroupList();
+}
+
+async function renderGroupList() {
+  const {data} = await sb
+    .from("group_members")
+    .select("group_id, groups(id, name, code)")
+    .eq("user_id", meId);
+
+  const list = $("groupList");
+  if (!data || data.length === 0) {
+    list.innerHTML = `<p class="sub" style="text-align:center;padding:8px 0">No groups yet — create one below.</p>`;
+    return;
+  }
+  list.innerHTML = data.map(row => {
+    const g = row.groups;
+    return `<div class="group-item" data-gid="${g.id}" data-gcode="${g.code}">
+      <div><div class="g-name">${escHtml(g.name)}</div><div class="g-code">${g.code}</div></div>
+      <span class="g-arr">›</span>
+    </div>`;
+  }).join("");
+  list.querySelectorAll(".group-item").forEach(el =>
+    el.onclick = () => enterGroup(el.dataset.gid, el.dataset.gcode));
+}
+
+$("createGroupBtn").onclick = async () => {
+  const name = prompt("Group name (e.g. Europe Trip):", "My Group");
+  if (!name || !name.trim()) return;
+  const code = name.trim().replace(/\s+/g,"").toUpperCase().slice(0,8)
+             + Math.random().toString(36).slice(2,5).toUpperCase();
+  const {data, error} = await sb.from("groups")
+    .insert({name: name.trim(), code, created_by: meId})
+    .select().single();
+  if (error) { $("groupErr").textContent = "Couldn't create group: " + error.message; return; }
+  await sb.from("group_members").insert({group_id: data.id, user_id: meId});
+  enterGroup(data.id, data.code);
+};
+
+$("joinBtn").onclick = async () => {
+  const code = sanitizeCode($("joinCode").value);
+  if (!code) { $("groupErr").textContent = "Enter a group code."; return; }
+  $("groupErr").textContent = "";
+  const joined = await tryJoinByCode(code);
+  if (joined) { showApp(); }
+  else         { $("groupErr").textContent = "No group found with that code."; }
+};
+
+$("groupLogoutBtn").onclick = logout;
+
+async function tryJoinByCode(code) {
+  const {data: grp} = await sb.from("groups").select("id,name,code").eq("code", code).maybeSingle();
+  if (!grp) return false;
+  await sb.from("group_members")
+    .upsert({group_id: grp.id, user_id: meId}, {onConflict:"group_id,user_id", ignoreDuplicates:true});
+  GROUP_ID   = grp.id;
+  GROUP_CODE = grp.code;
+  return true;
+}
+
+async function enterGroup(gid, gcode) {
+  GROUP_ID   = gid;
+  GROUP_CODE = gcode;
+  location.hash = gcode;
+  showApp();
+}
+
+function showApp() {
+  $("authScreen").classList.add("hidden");
+  $("groupScreen").classList.add("hidden");
+  $("app").classList.remove("hidden");
+  $("groupCodeBadge").textContent  = GROUP_CODE;
+  $("shareUrl").value              = shareLink();
+  $("inviteLinkInput").value       = shareLink();
+  partsInit = false;
+  store = makeSupabaseStore(GROUP_ID);
+  store.subscribe(s => {
+    state = s;
+    if (!partsInit) {
+      ui.participants = new Set(state.members.map(m => m.id));
+      partsInit = true;
+    }
+    render();
+  });
+}
+
+async function logout() {
+  if (store) store.cleanup();
+  await sb.auth.signOut();
+  location.hash = "";
+  location.reload();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SUPABASE STORE
+   ══════════════════════════════════════════════════════════════ */
+function makeSupabaseStore(groupId) {
+  let sub = null;
+  let channel = null;
+
+  async function fetchState() {
+    const [membersRes, expRes, payRes, grpRes, fxRes] = await Promise.all([
+      sb.from("group_members").select("user_id, created_at, profiles(username)").eq("group_id", groupId).order("created_at"),
+      sb.from("expenses").select("*").eq("group_id", groupId).order("created_at"),
+      sb.from("payments").select("*").eq("group_id", groupId).order("created_at"),
+      sb.from("groups").select("name").eq("id", groupId).single(),
+      sb.from("fx_cache").select("*")
+    ]);
+
+    const members = (membersRes.data || []).map(m => ({
+      id:        m.user_id,
+      name:      m.profiles?.username || "Unknown",
+      createdAt: new Date(m.created_at).getTime()
+    }));
+
+    const expenses = (expRes.data || []).map(e => ({
+      id:           e.id,
+      desc:         e.description,
+      origAmount:   parseFloat(e.orig_amount),
+      origCurrency: e.orig_currency,
+      rate:         parseFloat(e.exchange_rate),
+      amountUSD:    parseFloat(e.amount_usd),
+      date:         e.expense_date,
+      payer:        e.payer_id,
+      participants: e.participants || [],
+      splitMode:    e.split_mode,
+      customSplits: e.custom_splits,
+      city:         e.city,
+      ts:           new Date(e.created_at).getTime()
+    }));
+
+    const payments = (payRes.data || []).map(p => ({
+      id:     p.id,
+      from:   p.from_id,
+      to:     p.to_id,
+      amount: parseFloat(p.amount),
+      ts:     new Date(p.created_at).getTime()
+    }));
+
+    const fxCache = {};
+    (fxRes.data || []).forEach(f => { fxCache[f.cache_key] = parseFloat(f.rate); });
+
+    return {
+      tripName: grpRes.data?.name || "PayShare",
+      members, expenses, payments, fxCache
+    };
+  }
+
+  function setupRealtime() {
+    if (channel) sb.removeChannel(channel);
+    const refresh = async () => { if (sub) sub(await fetchState()); };
+    channel = sb.channel(`group-${groupId}`)
+      .on("postgres_changes", {event:"*", schema:"public", table:"expenses",      filter:`group_id=eq.${groupId}`}, refresh)
+      .on("postgres_changes", {event:"*", schema:"public", table:"payments",      filter:`group_id=eq.${groupId}`}, refresh)
+      .on("postgres_changes", {event:"*", schema:"public", table:"group_members", filter:`group_id=eq.${groupId}`}, refresh)
+      .on("postgres_changes", {event:"*", schema:"public", table:"groups",        filter:`id=eq.${groupId}`},       refresh)
+      .subscribe(status => setSync(status === "SUBSCRIBED" ? "synced" : "offline"));
+  }
+
+  return {
+    cleanup() { if (channel) sb.removeChannel(channel); },
+
+    async subscribe(cb) {
+      sub = cb;
+      setSync("offline");
+      cb(await fetchState());
+      setupRealtime();
+    },
+
+    async setTripName(v) {
+      await sb.from("groups").update({name: v}).eq("id", groupId);
+      if (sub) sub(await fetchState());
+      flashSaved();
+    },
+
+    async addExpense(id, e) {
+      const {error} = await sb.from("expenses").insert({
+        id, group_id: groupId,
+        payer_id:     e.payer,
+        description:  e.desc,
+        orig_amount:  e.origAmount,
+        orig_currency:e.origCurrency,
+        exchange_rate:e.rate,
+        amount_usd:   e.amountUSD,
+        expense_date: e.date,
+        participants: e.participants,
+        split_mode:   e.splitMode,
+        custom_splits:e.customSplits,
+        city:         e.city
+      });
+      if (error) { alert("Error saving expense: " + error.message); return; }
+      if (sub) sub(await fetchState());
+      flashSaved();
+    },
+
+    async delExpense(id) {
+      await sb.from("expenses").delete().eq("id", id);
+      if (sub) sub(await fetchState());
+      flashSaved();
+    },
+
+    async addPayment(id, p) {
+      await sb.from("payments").insert({
+        id, group_id: groupId,
+        from_id: p.from, to_id: p.to, amount: p.amount
+      });
+      if (sub) sub(await fetchState());
+      flashSaved();
+    },
+
+    async delPayment(id) {
+      await sb.from("payments").delete().eq("id", id);
+      if (sub) sub(await fetchState());
+      flashSaved();
+    },
+
+    async cacheRate(key, rate) {
+      await sb.from("fx_cache")
+        .upsert({cache_key: key, rate, cached_at: new Date().toISOString()}, {onConflict:"cache_key"});
+    }
+  };
+}
+
+function setSync(stat) {
+  const dot = $("syncDot"), t = $("syncText"); if (!dot) return;
+  dot.className = "sync-dot" + (stat === "offline" ? " off" : stat === "local" ? " local" : "");
+  t.textContent = stat === "synced"  ? "Live · group " + GROUP_CODE
+                : stat === "offline" ? "Offline — will sync when back"
+                : "Connecting…";
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FX RATES
+   ══════════════════════════════════════════════════════════════ */
+async function fetchRate(cur, date) {
+  const urls = [`https://api.frankfurter.app/${date}?from=${cur}&to=USD`, `https://api.frankfurter.app/latest?from=${cur}&to=USD`];
+  for (const u of urls) {
+    try { const r = await fetch(u); if (!r.ok) continue; const d = await r.json(); const rate = d?.rates?.USD; if (rate) return rate; }
+    catch(e) {}
+  }
+  return null;
+}
+async function getRate(cur, date) {
+  if (cur === "USD") return 1;
+  const key = cur + "_" + date;
+  if (state.fxCache[key]) return state.fxCache[key];
+  const rate = await fetchRate(cur, date);
+  if (rate && store) store.cacheRate(key, rate);
+  return rate;
+}
+async function refreshRate() {
+  const myId = ++rateReqId; ui.liveRate = null;
+  if (ui.currency === "USD") { ui.rateLoading = false; renderRateLine(); return; }
+  ui.rateLoading = true; renderRateLine();
+  const rate = await getRate(ui.currency, ui.date);
+  if (myId !== rateReqId) return;
+  ui.liveRate = rate; ui.rateLoading = false; renderRateLine();
+}
+function effectiveRate() {
+  if (ui.currency === "USD") return 1;
+  if (ui.liveRate != null)   return ui.liveRate;
+  const m = parseFloat(ui.manualRate); return m > 0 ? m : null;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RECEIPT SCAN  (optional — uses your Anthropic API key)
+   ══════════════════════════════════════════════════════════════ */
+function getKey() { try{return localStorage.getItem("ps-anthropic-key")||"";}catch(e){return "";} }
+function compressImage(file, maxDim, quality) {
+  return new Promise((res,rej) => {
+    const url = URL.createObjectURL(file); const img = new Image();
+    img.onload = () => {
+      let w=img.naturalWidth,h=img.naturalHeight;const sc=Math.min(1,maxDim/Math.max(w,h));
+      w=Math.max(1,Math.round(w*sc));h=Math.max(1,Math.round(h*sc));
+      const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      try{const d=c.toDataURL("image/jpeg",quality);res({b64:d.split(",")[1],media:"image/jpeg"});}catch(e){rej(e);}
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error("img"));}; img.src=url;
+  });
+}
+async function scanScreenshot(file) {
+  if (!file) return;
+  const key = getKey();
+  if (!key) { ui.scanError = "Add an Anthropic API key in Settings (⚙) to scan, or just type it in below."; showScan(); return; }
+  ui.scanBusy = true; showScan();
+  try {
+    let b64, media;
+    try { ({b64,media}=await compressImage(file,1280,0.72)); }
+    catch(e) { b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=()=>rej();r.readAsDataURL(file);}); media=file.type||"image/png"; }
+    const prompt = 'This image is a receipt or payment screenshot. Find the single TOTAL amount paid (include tax and tip). Identify the currency. Give a 2-4 word description. Respond ONLY with JSON (no markdown): {"amount":number_or_null,"currency":"USD","description":"short text"}';
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST",
+      headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body: JSON.stringify({model:"claude-sonnet-4-6",max_tokens:200,messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:media,data:b64}},{type:"text",text:prompt}]}]})
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message || "api");
+    const text = (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("").replace(/```json|```/g,"").trim();
+    const parsed = JSON.parse(text);
+    if (parsed.amount != null)                    $("expAmt").value = parsed.amount;
+    if (parsed.currency && CURRENCIES.includes(parsed.currency)) { ui.currency=$("expCur").value=parsed.currency; $("amtSym").textContent=CUR_SYM[parsed.currency]||""; }
+    if (parsed.description)                       $("expDesc").value = parsed.description;
+    ui.scanBusy=false; ui.scanError=null; showScan();
+    await refreshRate();
+    if (ui.splitMode==="custom") renderCustomSplit();
+  } catch(e) {
+    console.error(e); ui.scanBusy=false; ui.scanError="Couldn't read that one — type the amount in below."; showScan();
+  }
+}
+function showScan() {
+  const z=$("scanZone"),ic=$("scanIcon"),t=$("scanTitle"),s=$("scanSub"),err=$("scanErr");
+  if (ui.scanBusy) { z.classList.add("busy");ic.innerHTML='<span class="spinner"></span>';t.textContent="Reading the screenshot…";s.textContent="Pulling out the total";err.classList.add("hidden"); }
+  else { z.classList.remove("busy");ic.textContent="📸";t.textContent="Scan a receipt or payment screenshot";s.textContent="Pulls out the total, currency, and what it was for";
+    if(ui.scanError){err.textContent=ui.scanError;err.classList.remove("hidden");}else err.classList.add("hidden"); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MATH
+   ══════════════════════════════════════════════════════════════ */
+function shareFor(exp, id) {
+  if (!exp.participants.includes(id)) return 0;
+  if (exp.splitMode==="custom" && exp.customSplits) return Number(exp.customSplits[id]||0);
+  return exp.amountUSD / exp.participants.length;
+}
+function netBalances() {
+  const net = {}; state.members.forEach(m => net[m.id]=0);
+  state.expenses.forEach(exp => {
+    if (net[exp.payer] !== undefined) net[exp.payer] += exp.amountUSD;
+    state.members.forEach(m => { if(net[m.id]!==undefined) net[m.id] -= shareFor(exp,m.id); });
+  });
+  (state.payments||[]).forEach(p => {
+    if (net[p.from] !== undefined) net[p.from] += p.amount;
+    if (net[p.to]   !== undefined) net[p.to]   -= p.amount;
+  });
+  return net;
+}
+function settlements() {
+  const net=netBalances(); const cred=[],deb=[];
+  state.members.forEach(m => { const v=round2(net[m.id]); if(v>0.009) cred.push({id:m.id,amt:v}); else if(v<-0.009) deb.push({id:m.id,amt:-v}); });
+  cred.sort((a,b)=>b.amt-a.amt); deb.sort((a,b)=>b.amt-a.amt);
+  const out=[]; let i=0,j=0;
+  while(i<deb.length&&j<cred.length){const pay=Math.min(deb[i].amt,cred[j].amt);out.push({from:deb[i].id,to:cred[j].id,amt:round2(pay)});deb[i].amt-=pay;cred[j].amt-=pay;if(deb[i].amt<0.009)i++;if(cred[j].amt<0.009)j++;}
+  return out;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RENDER
+   ══════════════════════════════════════════════════════════════ */
+function render() {
+  $("tripName").textContent = state.tripName;
+  $("totalSpent").textContent = fmtUSD(state.expenses.reduce((s,e)=>s+e.amountUSD,0));
+  renderMyCard(); renderSettle(); renderNet(); renderHistory(); renderCrew(); renderAddForm();
+}
+function empty(big,t,x){ return `<div class="empty"><div class="big">${big}</div><div class="t">${t}</div><div class="x">${x}</div></div>`; }
+
+function renderMyCard() {
+  const card=$("myCard"),body=$("mySummary");
+  if (!meId||state.members.length<2||state.expenses.length===0) { card.classList.add("hidden"); return; }
+  card.classList.remove("hidden"); $("myCardTitle").textContent = nameOf(meId)+"'s tab";
+  const net=round2(netBalances()[meId]||0); const s=settlements();
+  const owed=s.filter(p=>p.to===meId), owe=s.filter(p=>p.from===meId);
+  let head;
+  if (net>0.009)  head=`<div class="my-head pos">+${fmtUSD(net)}</div><div class="my-sub">the crew owes you, net</div>`;
+  else if(net<-0.009) head=`<div class="my-head neg">-${fmtUSD(-net)}</div><div class="my-sub">you owe the pot, net</div>`;
+  else            head=`<div class="my-head zero">$0.00</div><div class="my-sub">you're all square</div>`;
+  const lines = [
+    ...owed.map(p=>`<div class="my-line"><span class="t">${escHtml(nameOf(p.from))} owes you</span><span class="v in">${fmtUSD(p.amt)}</span><button class="mark-paid" data-from="${p.from}" data-to="${p.to}" data-amt="${p.amt}">Mark paid</button></div>`),
+    ...owe.map( p=>`<div class="my-line"><span class="t">You owe ${escHtml(nameOf(p.to))}</span><span class="v out">${fmtUSD(p.amt)}</span><button class="mark-paid" data-from="${p.from}" data-to="${p.to}" data-amt="${p.amt}">Mark paid</button></div>`)
+  ].join("");
+  body.innerHTML = head + (lines || `<div class="my-sub">Nothing to settle for you right now.</div>`);
+  body.querySelectorAll(".mark-paid").forEach(b => b.onclick=()=>markPaid(b.dataset.from,b.dataset.to,parseFloat(b.dataset.amt)));
+}
+
+function renderSettle() {
+  const el=$("settleList");
+  if (state.members.length<2)     { el.innerHTML=empty("👥","Only you here","Share the invite link in the Crew tab to add your crew."); renderSettled(); return; }
+  if (state.expenses.length===0)  { el.innerHTML=empty("🧾","Nothing to settle yet","Log a few expenses and the payments show up here."); renderSettled(); return; }
+  const s=settlements();
+  if (s.length===0) { el.innerHTML=`<div class="allset"><span class="em">✅</span><div><div class="t">All square</div><div class="x">Nobody owes anybody.</div></div></div>`; renderSettled(); return; }
+  el.innerHTML = s.map(p => {
+    const mine=(p.from===meId||p.to===meId)?" mine":""; let who;
+    if (p.from===meId) who=`You<span class="arrow">pay →</span>${escHtml(nameOf(p.to))}`;
+    else if(p.to===meId) who=`${escHtml(nameOf(p.from))}<span class="arrow">pays →</span>you`;
+    else who=`${escHtml(nameOf(p.from))}<span class="arrow">pays →</span>${escHtml(nameOf(p.to))}`;
+    return `<div class="stub${mine}"><span class="who">${who}</span><span class="amt">${fmtUSD(p.amt)}</span><button class="mark-paid" data-from="${p.from}" data-to="${p.to}" data-amt="${p.amt}">Mark paid</button></div>`;
+  }).join("");
+  el.querySelectorAll(".mark-paid").forEach(b => b.onclick=()=>markPaid(b.dataset.from,b.dataset.to,parseFloat(b.dataset.amt)));
+  renderSettled();
+}
+
+function renderSettled() {
+  const el=$("settledList"); if (!el) return;
+  const pays=state.payments||[];
+  if (pays.length===0) { el.parentElement.classList.add("hidden"); return; }
+  el.parentElement.classList.remove("hidden");
+  el.innerHTML = [...pays].reverse().map(p =>
+    `<div class="settled-row"><span class="check">✓</span><span class="who">${escHtml(nameOf(p.from))} paid ${escHtml(nameOf(p.to))}</span><span class="amt">${fmtUSD(p.amount)}</span><button class="undo" data-undo="${p.id}">undo</button></div>`
+  ).join("");
+  el.querySelectorAll("[data-undo]").forEach(b => b.onclick=()=>store.delPayment(b.dataset.undo));
+}
+
+function renderNet() {
+  const el=$("netGrid");
+  if (state.members.length===0) { el.innerHTML=empty("👤","No one here yet","Share the invite link to add your crew."); return; }
+  const net=netBalances();
+  el.innerHTML = state.members.map(m => {
+    const v=round2(net[m.id]); const cls=v>0.009?"pos":(v<-0.009?"neg":"zero");
+    const tag=v>0.009?"is owed":(v<-0.009?"owes the pot":"all square");
+    const disp=(v<-0.009?"-":(v>0.009?"+":""))+fmtUSD(Math.abs(v)); const mine=m.id===meId;
+    return `<div class="net-row${mine?" mine":""}">
+      <span class="avatar" style="background:${colorFor(m.id)}">${initials(m.name)}</span>
+      <span class="net-name">${escHtml(m.name)}${mine?'<span class="you-tag">you</span>':''}</span>
+      <span style="margin-left:auto;text-align:right"><span class="net-val ${cls}">${disp}</span><span class="net-tag">${tag}</span></span>
+    </div>`;
+  }).join("");
+}
+
+function renderHistory() {
+  const el=$("histList");
+  if (state.expenses.length===0) { el.innerHTML=empty("🧾","No expenses logged","Add your first one from the Add tab."); return; }
+  el.innerHTML = [...state.expenses].reverse().map((e,idx) => {
+    const icon=EXP_ICONS[(state.expenses.length-1-idx)%EXP_ICONS.length];
+    const cityTxt=e.city?`${e.city} · `:"";
+    const orig=(e.origCurrency&&e.origCurrency!=="USD")
+      ? `<div class="o">${fmtOrig(e.origAmount,e.origCurrency)} · ${dateShort(e.date)}</div>`
+      : `<div class="o">${dateShort(e.date||todayISO())}</div>`;
+    return `<div class="exp"><div class="ic">${icon}</div>
+      <div class="meta"><div class="d">${escHtml(e.desc)||"Expense"}</div>
+      <div class="s">${cityTxt}${escHtml(nameOf(e.payer))} paid · split ${e.participants.length} way${e.participants.length!==1?'s':''}</div></div>
+      <div class="ea"><div class="v">${fmtUSD(e.amountUSD)}</div>${orig}<button class="del" data-del="${e.id}">remove</button></div></div>`;
+  }).join("");
+  el.querySelectorAll("[data-del]").forEach(b => b.onclick=()=>store.delExpense(b.dataset.del));
+}
+
+function renderCrew() {
+  const el=$("memberList");
+  $("inviteLinkInput").value = shareLink();
+  el.innerHTML = state.members.length
+    ? state.members.map(m =>
+        `<div class="member-li">
+          <span class="avatar" style="background:${colorFor(m.id)}">${initials(m.name)}</span>
+          <span class="nm">${escHtml(m.name)}${m.id===meId?'<span class="you-tag" style="margin-left:6px">you</span>':''}</span>
+        </div>`).join("")
+    : `<p class="sub" style="margin:6px 0 0">No one here yet.</p>`;
+}
+
+function renderAddForm() {
+  const cur=$("expCur");
+  if (cur.options.length===0) cur.innerHTML = CURRENCIES.map(c=>`<option value="${c}">${c} ${CUR_SYM[c]||""}</option>`).join("");
+  cur.value=$("amtSym").textContent=CUR_SYM[ui.currency]||"" && ui.currency;
+  $("amtSym").textContent = CUR_SYM[ui.currency]||"";
+  cur.value = ui.currency;
+  $("expDate").value = ui.date;
+  ui.participants.forEach(id => { if (!state.members.some(m=>m.id===id)) ui.participants.delete(id); });
+  const payer=$("expPayer");
+  payer.innerHTML = state.members.map(m =>
+    `<option value="${m.id}"${m.id===meId?" selected":""}>${escHtml(m.name)}</option>`
+  ).join("") || `<option value="">No members yet</option>`;
+  $("cityChips").innerHTML = ITINERARY.map(c =>
+    `<button type="button" class="chip city" data-city="${c}" aria-pressed="${ui.selectedCity===c}">${c}</button>`
+  ).join("");
+  $("cityChips").querySelectorAll("[data-city]").forEach(c =>
+    c.onclick=()=>{ui.selectedCity=ui.selectedCity===c.dataset.city?null:c.dataset.city; renderAddForm();});
+  $("partChips").innerHTML = state.members.map(m =>
+    `<button type="button" class="chip" data-part="${m.id}" aria-pressed="${ui.participants.has(m.id)}">${escHtml(m.name)}</button>`
+  ).join("") || `<span class="sub">No members yet.</span>`;
+  $("partChips").querySelectorAll("[data-part]").forEach(c =>
+    c.onclick=()=>{const id=c.dataset.part; ui.participants.has(id)?ui.participants.delete(id):ui.participants.add(id); renderCustomSplit(); renderAddForm();});
+  $("splitSeg").querySelectorAll("[data-mode]").forEach(b => {
+    b.setAttribute("aria-pressed", ui.splitMode===b.dataset.mode);
+    b.onclick=()=>{ui.splitMode=b.dataset.mode; $("customSplit").classList.toggle("hidden",ui.splitMode!=="custom"); renderCustomSplit(); renderAddForm();};
+  });
+  $("customSplit").classList.toggle("hidden", ui.splitMode!=="custom");
+  renderCustomSplit();
+  $("addBtn").disabled = state.members.length < 2;
+}
+
+function renderRateLine() {
+  const el=$("rateLine"); const amt=parseFloat($("expAmt").value)||0;
+  if (ui.currency==="USD") { el.innerHTML="Tracked in USD — no conversion needed."; return; }
+  if (ui.rateLoading)      { el.innerHTML=`<span class="spinner" style="width:13px;height:13px;border-width:2px"></span> Fetching ${dateShort(ui.date)} rate for ${ui.currency}…`; return; }
+  if (ui.liveRate!=null)   { const usd=amt?` &nbsp;·&nbsp; <span class="usd">≈ ${fmtUSD(amt*ui.liveRate)}</span>`:""; el.innerHTML=`1 ${ui.currency} = ${ui.liveRate.toFixed(4)} USD &nbsp;<span style="color:var(--green)">●</span> live ECB rate, ${dateShort(ui.date)}${usd}`; return; }
+  const m=parseFloat(ui.manualRate); const usd=(amt&&m>0)?` &nbsp;·&nbsp; <span class="usd">≈ ${fmtUSD(amt*m)}</span>`:"";
+  el.innerHTML=`Live rate unavailable — enter today's rate to convert.<div class="manual-rate">1 ${ui.currency} = <div class="amt-input-wrap" style="width:auto"><input type="number" id="manualRateInput" inputmode="decimal" step="0.0001" min="0" placeholder="0.00" value="${ui.manualRate}"></div> USD${usd}</div>`;
+  const inp=$("manualRateInput"); if(inp) inp.oninput=()=>{ui.manualRate=inp.value;renderRateLine();if(ui.splitMode==="custom")renderCustomSplit();};
+}
+
+function renderCustomSplit() {
+  if (ui.splitMode!=="custom") return;
+  const box=$("customSplit"); const parts=[...ui.participants];
+  const amt=parseFloat($("expAmt").value)||0;
+  const used=parts.reduce((s,id)=>s+(parseFloat(ui.customSplits[id])||0),0);
+  const remain=round2(amt-used); const sym=CUR_SYM[ui.currency]||"";
+  box.innerHTML = parts.length
+    ? parts.map(id=>
+        `<div class="cs-row"><span class="nm">${escHtml(nameOf(id))}</span>
+        <div class="amt-input-wrap"><span class="sym">${sym}</span><input type="number" inputmode="decimal" min="0" step="0.01" data-cs="${id}" value="${ui.customSplits[id]??''}" placeholder="0.00"></div></div>`
+      ).join("") +
+      `<div class="cs-remain" style="color:${Math.abs(remain)<0.01?'var(--green)':'var(--stamp)'}">
+        ${Math.abs(remain)<0.01?'Balanced ✓':(remain>0?fmtOrig(remain,ui.currency)+' left':fmtOrig(-remain,ui.currency)+' over')}</div>`
+    : `<p class="sub">Pick who's splitting this first.</p>`;
+  box.querySelectorAll("[data-cs]").forEach(inp => inp.oninput=()=>{ui.customSplits[inp.dataset.cs]=inp.value;renderCustomSplit();});
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ACTIONS
+   ══════════════════════════════════════════════════════════════ */
+async function markPaid(from, to, amt) {
+  if (!confirm(`Mark ${nameOf(from)}'s ${fmtUSD(amt)} payment to ${nameOf(to)} as paid?`)) return;
+  await store.addPayment(uid(), {from, to, amount: round2(amt), ts: Date.now()});
+}
+
+async function addExpense() {
+  const desc        = $("expDesc").value.trim();
+  const origAmount  = parseFloat($("expAmt").value);
+  const payer       = $("expPayer").value;
+  const participants= [...ui.participants];
+  if (!origAmount || origAmount<=0)  { alert("Enter an amount."); return; }
+  if (!payer)                         { alert("Pick who paid."); return; }
+  if (participants.length===0)        { alert("Pick who's splitting this."); return; }
+  const rate = effectiveRate();
+  if (rate==null) { alert("Need an exchange rate to convert to USD. Enter it in the rate box."); return; }
+  const amountUSD = round2(origAmount*rate);
+  let customSplits = null;
+  if (ui.splitMode==="custom") {
+    const usedOrig = participants.reduce((s,id)=>s+(parseFloat(ui.customSplits[id])||0),0);
+    if (Math.abs(usedOrig-origAmount)>0.02) { alert("Custom amounts must add up to the total ("+fmtOrig(origAmount,ui.currency)+")."); return; }
+    customSplits={};
+    participants.forEach(id => customSplits[id] = round2((parseFloat(ui.customSplits[id])||0)*rate));
+  }
+  $("addBtn").disabled = true;
+  await store.addExpense(uid(), {
+    desc, origAmount, origCurrency:ui.currency, rate, amountUSD,
+    date:ui.date, payer, participants, splitMode:ui.splitMode, customSplits, city:ui.selectedCity, ts:Date.now()
+  });
+  $("addBtn").disabled = false;
+  $("expDesc").value=""; $("expAmt").value="";
+  ui.selectedCity=null; ui.splitMode="even"; ui.customSplits={}; ui.manualRate=""; ui.scanError=null;
+  ui.participants = new Set(state.members.map(m=>m.id));
+  showScan(); switchTab("settle");
+}
+
+function switchTab(t) {
+  ui.tab=t;
+  document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab===t));
+  ["settle","add","history","crew"].forEach(p => $("panel-"+p).classList.toggle("hidden", p!==t));
+  if (t==="add") refreshRate();
+}
+
+function copyShare() { navigator.clipboard?.writeText(shareLink()); flashSaved(); }
+
+/* ══════════════════════════════════════════════════════════════
+   WIRE UP EVENTS
+   ══════════════════════════════════════════════════════════════ */
+document.querySelectorAll(".tab").forEach(b => b.onclick=()=>switchTab(b.dataset.tab));
+$("addBtn").onclick    = addExpense;
+$("expAmt").oninput    = () => { renderRateLine(); if(ui.splitMode==="custom") renderCustomSplit(); };
+$("expCur").onchange   = e => { ui.currency=e.target.value; $("amtSym").textContent=CUR_SYM[ui.currency]||""; ui.manualRate=""; refreshRate(); if(ui.splitMode==="custom") renderCustomSplit(); };
+$("expDate").onchange  = e => { ui.date=e.target.value||todayISO(); ui.manualRate=""; refreshRate(); };
+$("scanZone").onclick  = () => $("scanInput").click();
+$("scanInput").onchange= e => { const f=e.target.files?.[0]; if(f) scanScreenshot(f); e.target.value=""; };
+$("tripName").addEventListener("blur", e => { const v=e.target.textContent.trim()||"PayShare"; e.target.textContent=v; if(store) store.setTripName(v); });
+$("tripName").addEventListener("keydown", e => { if(e.key==="Enter"){e.preventDefault();e.target.blur();} });
+$("gearBtn").onclick   = () => { $("shareUrl").value=shareLink(); $("apiKey").value=getKey(); $("settings").classList.remove("hidden"); };
+$("setClose").onclick  = () => $("settings").classList.add("hidden");
+$("copyShare").onclick = copyShare;
+$("copyShare2").onclick= copyShare;
+$("copyInviteBtn").onclick = copyShare;
+$("saveKey").onclick   = () => { try{const k=$("apiKey").value.trim();k?localStorage.setItem("ps-anthropic-key",k):localStorage.removeItem("ps-anthropic-key");}catch(x){} $("settings").classList.add("hidden"); flashSaved(); showScan(); };
+$("switchGroup").onclick= () => { if(store) store.cleanup(); GROUP_ID=null; GROUP_CODE=null; location.hash=""; showGroupScreen(); };
+$("logoutBtn").onclick = logout;
+
+/* ══════════════════════════════════════════════════════════════
+   BOOT
+   ══════════════════════════════════════════════════════════════ */
+async function boot() {
+  const {data:{session}} = await sb.auth.getSession();
+  if (session) {
+    meId = session.user.id;
+    const uname = session.user.email.split("@")[0];
+    $("loggedUserLabel").textContent = uname;
+    $("welcomeName").textContent     = uname;
+    await afterAuth(session.user);
+  } else {
+    $("authScreen").classList.remove("hidden");
+  }
+  sb.auth.onAuthStateChange((event) => {
+    if (event==="SIGNED_OUT") location.reload();
+  });
+}
+
+boot();
+</script>
+</body>
+</html>
