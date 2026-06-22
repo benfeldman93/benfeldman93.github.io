@@ -33,7 +33,7 @@
   .auth-tabs{display:flex;gap:4px;background:var(--kraft);border-radius:10px;padding:4px;margin-bottom:18px;}
   .auth-tab{flex:1;border:none;background:none;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;
     font-size:13.5px;color:var(--ink-soft);padding:8px;border-radius:7px;cursor:pointer;transition:.12s;}
-  .auth-tab[aria-selected="true"]{background:var(--ink);color:var(--paper);}
+  .auth-tab[aria-selected="true"],.auth-tab.active{background:var(--ink);color:var(--paper);}
   .auth-err{color:var(--stamp);font-size:12.5px;margin-top:8px;min-height:18px;line-height:1.4;}
   .group-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
   .group-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);
@@ -468,13 +468,18 @@ function sanitizeCode(s){ return (s||"").toUpperCase().replace(/[^A-Z0-9_-]/g,""
    ══════════════════════════════════════════════════════════════ */
 let authMode = "login";
 
-document.querySelectorAll(".auth-tab").forEach(b => b.onclick = () => {
-  authMode = b.dataset.auth;
-  document.querySelectorAll(".auth-tab").forEach(t => t.setAttribute("aria-selected", t.dataset.auth === authMode));
-  $("authSubmit").textContent = authMode === "login" ? "Log in" : "Create account";
-  $("authPass").autocomplete  = authMode === "login" ? "current-password" : "new-password";
-  $("authErr").textContent = "";
-});
+function setAuthMode(mode) {
+  authMode = mode;
+  document.querySelectorAll(".auth-tab").forEach(t => {
+    const on = t.dataset.auth === mode;
+    t.setAttribute("aria-selected", on ? "true" : "false");
+    t.classList.toggle("active", on);
+  });
+  $("authSubmit").textContent = mode === "login" ? "Log in" : "Create account";
+  $("authPass").autocomplete  = mode === "login" ? "current-password" : "new-password";
+  $("authErr").textContent    = "";
+}
+document.querySelectorAll(".auth-tab").forEach(b => b.onclick = () => setAuthMode(b.dataset.auth));
 
 $("authForm").onsubmit = async e => {
   e.preventDefault();
