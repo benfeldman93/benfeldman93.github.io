@@ -431,7 +431,12 @@
    ══════════════════════════════════════════════════════════════ */
 const SUPABASE_URL      = 'YOUR_SUPABASE_URL';
 const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let sb = null;
+try {
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} catch(e) {
+  console.error('Supabase init failed — fill in SUPABASE_URL and SUPABASE_ANON_KEY:', e);
+}
 
 /* ══ constants ══ */
 const ITINERARY    = ["Copenhagen","Amsterdam","Berlin","Prague","Munich","Venice","Florence","Cinque Terre","Paris","Nice","Barcelona","Porto","Lisbon"];
