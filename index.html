@@ -494,6 +494,10 @@ $("authForm").onsubmit = async e => {
   if (!username)          { $("authErr").textContent = "Enter a username."; return; }
   if (password.length < 6){ $("authErr").textContent = "Password must be at least 6 characters."; return; }
 
+  if (!sb) {
+    $("authErr").textContent = "Supabase isn't connected yet — open index.html and replace YOUR_SUPABASE_URL and YOUR_SUPABASE_ANON_KEY with your project credentials.";
+    return;
+  }
   $("authSubmit").disabled = true;
   $("authSubmit").textContent = "…";
   const email = username + "@payshare.local";
