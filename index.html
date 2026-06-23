@@ -688,16 +688,27 @@ function makeSupabaseStore(groupId) {
 
   async function fetchState() {
     const [membersRes, expRes, payRes, grpRes, fxRes] = await Promise.all([
-      sb.from("group_members").select("user_id, created_at, profiles(username)").eq("group_id", groupId).order("created_at"),
+      sb.from("group_members").select("user_id, created_at").eq("group_id", groupId).order("created_at"),
       sb.from("expenses").select("*").eq("group_id", groupId).order("created_at"),
       sb.from("payments").select("*").eq("group_id", groupId).order("created_at"),
       sb.from("groups").select("name, custom_cities").eq("id", groupId).single(),
       sb.from("fx_cache").select("*")
     ]);
+    if (membersRes.error) console.error("members query:", membersRes.error);
 
-    const members = (membersRes.data || []).map(m => ({
+    /* look up usernames separately — there's no direct FK to embed profiles */
+    const memberRows = membersRes.data || [];
+    const ids = memberRows.map(m => m.user_id);
+    let nameById = {};
+    if (ids.length) {
+      const profRes = await sb.from("profiles").select("id, username").in("id", ids);
+      if (profRes.error) console.error("profiles query:", profRes.error);
+      (profRes.data || []).forEach(p => { nameById[p.id] = p.username; });
+    }
+
+    const members = memberRows.map(m => ({
       id:        m.user_id,
-      name:      m.profiles?.username || "Unknown",
+      name:      nameById[m.user_id] || "Unknown",
       createdAt: new Date(m.created_at).getTime()
     }));
 
