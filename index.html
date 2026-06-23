@@ -316,10 +316,8 @@
       <button class="btn dark" id="copyShare" style="margin-top:8px">Copy link</button>
     </div>
     <div class="modecard">
-      <div class="h">Receipt scanning (optional)</div>
-      <p>Reading a receipt photo needs an Anthropic API key. Stored only in this browser, never shared.</p>
-      <input type="password" id="apiKey" placeholder="sk-ant-… (optional)">
-      <button class="btn ghost" id="saveKey" style="margin-top:8px">Save key on this device</button>
+      <div class="h">Receipt scanning</div>
+      <p>Scanning is built in — just tap a scan zone on the Add tab. No key needed; requests go through a secure server function.</p>
     </div>
     <button class="btn ghost" id="switchGroup" style="margin-top:6px">Switch group</button>
   </div>
@@ -472,10 +470,6 @@ const CURRENCIES   = ["EUR","USD","GBP","DKK","CZK","CHF","SEK","NOK","PLN","HUF
 const CUR_SYM      = {EUR:"€",USD:"$",GBP:"£",DKK:"kr",CZK:"Kč",CHF:"CHF",SEK:"kr",NOK:"kr",PLN:"zł",HUF:"Ft"};
 const AVATAR_COLORS= ["#C8453A","#2E7D5B","#3A5DA8","#B5762B","#7A4B9E","#1F8A8A","#A6453F","#4A7C3F"];
 const EXP_ICONS    = ["🍽️","🚆","🏨","🍻","🛒","🎟️","☕","⛽","🚕","🥐"];
-
-/* Shared Anthropic key — paste a key here so the whole crew can scan receipts
-   without entering their own. Leave '' to fall back to a per-device key in Settings. */
-const ANTHROPIC_API_KEY = '';
 
 /* ══ app state ══ */
 let state  = {tripName:"PayShare", members:[], expenses:[], payments:[], fxCache:{}, customCities:[]};
@@ -866,9 +860,21 @@ function effectiveRate() {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   RECEIPT SCAN  (optional — uses your Anthropic API key)
+   RECEIPT SCAN  —  calls the Supabase Edge Function "anthropic-proxy"
+   which holds the API key server-side. The browser never sees the key.
    ══════════════════════════════════════════════════════════════ */
-function getKey() { if (ANTHROPIC_API_KEY) return ANTHROPIC_API_KEY; try{return localStorage.getItem("ps-anthropic-key")||"";}catch(e){return "";} }
+async function anthropicMessages(body) {
+  if (!sb) throw new Error("Not connected.");
+  const { data, error } = await sb.functions.invoke("anthropic-proxy", { body });
+  if (error) {
+    // surface the proxy's JSON error body when present
+    let msg = error.message || "Scan service error.";
+    try { const ctx = await error.context?.json?.(); if (ctx?.error?.message) msg = ctx.error.message; } catch(_){}
+    throw new Error(msg);
+  }
+  if (data && data.error) throw new Error(data.error.message || "api");
+  return data;
+}
 function compressImage(file, maxDim, quality) {
   return new Promise((res,rej) => {
     const url = URL.createObjectURL(file); const img = new Image();
@@ -884,21 +890,13 @@ function compressImage(file, maxDim, quality) {
 }
 async function scanScreenshot(file) {
   if (!file) return;
-  const key = getKey();
-  if (!key) { ui.scanError = "Add an Anthropic API key in Settings (⚙) to scan, or just type it in below."; showScan(); return; }
-  ui.scanBusy = true; showScan();
+  ui.scanBusy = true; ui.scanError = null; showScan();
   try {
     let b64, media;
     try { ({b64,media}=await compressImage(file,1280,0.72)); }
     catch(e) { b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=()=>rej();r.readAsDataURL(file);}); media=file.type||"image/png"; }
     const prompt = 'This image is a receipt or payment screenshot. Find the single TOTAL amount paid (include tax and tip). Identify the currency. Give a 2-4 word description. Respond ONLY with JSON (no markdown): {"amount":number_or_null,"currency":"USD","description":"short text"}';
-    const resp = await fetch("https://api.anthropic.com/v1/messages", {
-      method:"POST",
-      headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-      body: JSON.stringify({model:"claude-sonnet-4-6",max_tokens:200,messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:media,data:b64}},{type:"text",text:prompt}]}]})
-    });
-    const data = await resp.json();
-    if (data.error) throw new Error(data.error.message || "api");
+    const data = await anthropicMessages({model:"claude-sonnet-4-6",max_tokens:200,messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:media,data:b64}},{type:"text",text:prompt}]}]});
     const text = (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("").replace(/```json|```/g,"").trim();
     const parsed = JSON.parse(text);
     if (parsed.amount != null)                    $("expAmt").value = parsed.amount;
@@ -913,21 +911,13 @@ async function scanScreenshot(file) {
 }
 async function scanBillItems(file) {
   if (!file) return;
-  const key = getKey();
-  if (!key) { ui.itemScanError = "Add an Anthropic API key in Settings (⚙) to scan, or add items manually."; renderItemSplit(); return; }
   ui.itemScanBusy = true; ui.itemScanError = null; renderItemSplit();
   try {
     let b64, media;
     try { ({b64,media}=await compressImage(file,1280,0.72)); }
     catch(e) { b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=()=>rej();r.readAsDataURL(file);}); media=file.type||"image/png"; }
     const prompt = 'This is an itemized bill or receipt. List every line item with its individual price (NOT the total). Also identify the currency. Respond ONLY with JSON (no markdown): {"currency":"USD","items":[{"name":"short item name","price":number}]}. Include tax and tip/gratuity as their own line items if present.';
-    const resp = await fetch("https://api.anthropic.com/v1/messages", {
-      method:"POST",
-      headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-      body: JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1500,messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:media,data:b64}},{type:"text",text:prompt}]}]})
-    });
-    const data = await resp.json();
-    if (data.error) throw new Error(data.error.message || "api");
+    const data = await anthropicMessages({model:"claude-sonnet-4-6",max_tokens:1500,messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:media,data:b64}},{type:"text",text:prompt}]}]});
     const text = (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("").replace(/```json|```/g,"").trim();
     const parsed = JSON.parse(text);
     if (parsed.currency && CURRENCIES.includes(parsed.currency) && parsed.currency!==ui.currency) {
@@ -1295,12 +1285,11 @@ $("addCityBtn").onclick= addCity;
 $("newCity").onkeydown = e => { if(e.key==="Enter"){e.preventDefault();addCity();} };
 $("tripName").addEventListener("blur", e => { const v=e.target.textContent.trim()||"PayShare"; e.target.textContent=v; if(store) store.setTripName(v); });
 $("tripName").addEventListener("keydown", e => { if(e.key==="Enter"){e.preventDefault();e.target.blur();} });
-$("gearBtn").onclick   = () => { $("shareUrl").value=shareLink(); $("apiKey").value=getKey(); $("settings").classList.remove("hidden"); };
+$("gearBtn").onclick   = () => { $("shareUrl").value=shareLink(); $("settings").classList.remove("hidden"); };
 $("setClose").onclick  = () => $("settings").classList.add("hidden");
 $("copyShare").onclick = copyShare;
 $("copyShare2").onclick= copyShare;
 $("copyInviteBtn").onclick = copyShare;
-$("saveKey").onclick   = () => { try{const k=$("apiKey").value.trim();k?localStorage.setItem("ps-anthropic-key",k):localStorage.removeItem("ps-anthropic-key");}catch(x){} $("settings").classList.add("hidden"); flashSaved(); showScan(); };
 $("switchGroup").onclick= () => { if(store) store.cleanup(); GROUP_ID=null; GROUP_CODE=null; location.hash=""; showGroupScreen(); };
 $("logoutBtn").onclick = logout;
 
