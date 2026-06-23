@@ -1128,8 +1128,13 @@ function renderRateLine() {
     const note = ui.liveRate==null
       ? `Live rate unavailable — enter today's rate.`
       : `Manual rate <a href="#" id="useLiveRate" style="color:var(--green);font-weight:700">use live (${ui.liveRate.toFixed(4)})</a>`;
-    el.innerHTML=`${note}<div class="manual-rate">1 ${ui.currency} = <div class="amt-input-wrap" style="width:auto"><input type="text" id="manualRateInput" inputmode="decimal" autocomplete="off" pattern="[0-9]*[.,]?[0-9]*" placeholder="0.0000" value="${ui.manualRate}"></div> USD${usd}</div>`;
-    const inp=$("manualRateInput"); if(inp) inp.oninput=()=>{ui.manualRate=inp.value;renderRateLine();syncSplits();};
+    el.innerHTML=`${note}<div class="manual-rate">1 ${ui.currency} = <div class="amt-input-wrap" style="width:auto"><input type="text" id="manualRateInput" inputmode="decimal" autocomplete="off" pattern="[0-9]*[.,]?[0-9]*" placeholder="0.0000" value="${ui.manualRate}"></div> USD<span id="rateUsdPreview">${usd}</span></div>`;
+    const inp=$("manualRateInput"); if(inp) inp.oninput=()=>{
+      ui.manualRate=inp.value;
+      const a=expAmtNum(), mm=readNum(ui.manualRate), prev=$("rateUsdPreview");
+      if(prev) prev.innerHTML=(a&&mm>0)?` &nbsp;·&nbsp; <span class="usd">≈ ${fmtUSD(a*mm)}</span>`:"";
+      syncSplits();   /* updates split boxes; does NOT rebuild this input, so focus stays */
+    };
     const live=$("useLiveRate"); if(live) live.onclick=e=>{e.preventDefault();ui.forceManual=false;ui.manualRate="";renderRateLine();syncSplits();};
     return;
   }
