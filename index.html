@@ -767,6 +767,7 @@ function showApp() {
     if (!partsInit) {
       ui.participants = new Set(state.members.map(m => m.id));
       partsInit = true;
+      refreshRate(); /* kick off on first load so Add tab shows live rate immediately */
     }
     render();
   });
@@ -1002,12 +1003,12 @@ async function getRate(cur, date) {
   return rate;
 }
 async function refreshRate() {
-  const myId = ++rateReqId; ui.liveRate = null;
-  if (ui.currency === "USD") { ui.rateLoading = false; renderRateLine(); return; }
-  ui.rateLoading = true; renderRateLine();
+  const myId = ++rateReqId;
+  if (ui.currency === "USD") { ui.liveRate = 1; ui.rateLoading = false; renderRateLine(); return; }
+  ui.rateLoading = true; renderRateLine(); /* keep old liveRate while fetching — no "unavailable" flash */
   const rate = await getRate(ui.currency, ui.date);
   if (myId !== rateReqId) return;
-  ui.liveRate = rate; ui.rateLoading = false; renderRateLine();
+  ui.liveRate = (rate ?? null); ui.rateLoading = false; renderRateLine();
 }
 function effectiveRate() {
   if (ui.currency === "USD") return 1;
