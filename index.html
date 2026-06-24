@@ -29,10 +29,8 @@
     width:100%;max-width:380px;box-shadow:var(--shadow);}
   .auth-logo{font-family:'Bricolage Grotesque',sans-serif;font-size:36px;font-weight:800;
     color:var(--ink);letter-spacing:-.02em;margin-bottom:4px;}
-  /* staggered dollar-sign S's in the wordmark */
-  .ss{display:inline-block;font-style:normal;font-weight:800;color:var(--stamp);}
-  .ss1{position:relative;top:-0.13em;}
-  .ss2{position:relative;top:0.13em;}
+  /* dollar-sign S's in the wordmark */
+  .ss{font-style:normal;font-weight:800;color:var(--stamp);}
   .auth-sub{font-size:13.5px;color:var(--ink-soft);margin-bottom:20px;}
   .auth-tabs{display:flex;gap:4px;background:var(--kraft);border-radius:10px;padding:4px;margin-bottom:18px;}
   .auth-tab{flex:1;border:none;background:none;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;
@@ -319,7 +317,7 @@
 <!-- ═══════════════════ AUTH SCREEN ═══════════════════ -->
 <div id="authScreen" class="screen">
   <div class="auth-card">
-    <div class="auth-logo"><span class="ss ss1">$</span>plit<span class="ss ss2">$</span>tack</div>
+    <div class="auth-logo"><span class="ss">$</span>plit<span class="ss">$</span>tack</div>
     <div class="auth-sub">Split expenses with your crew</div>
     <div class="auth-tabs">
       <button type="button" class="auth-tab" data-auth="login" aria-selected="true">Log in</button>
@@ -343,7 +341,7 @@
 <!-- ═══════════════════ GROUP SCREEN ═══════════════════ -->
 <div id="groupScreen" class="screen hidden">
   <div class="auth-card" style="max-width:420px">
-    <div class="auth-logo"><span class="ss ss1">$</span>plit<span class="ss ss2">$</span>tack</div>
+    <div class="auth-logo"><span class="ss">$</span>plit<span class="ss">$</span>tack</div>
     <div class="auth-sub">Welcome, <strong id="welcomeName"></strong> — pick or start a group</div>
     <div id="nickSetCard" class="hidden" style="margin-bottom:14px;background:var(--green-soft);border:1px solid #BFE0CE;border-radius:10px;padding:14px">
       <div style="font-weight:700;font-size:14px;margin-bottom:4px">Set your display name</div>
@@ -390,7 +388,7 @@
 <div class="wrap hidden" id="app">
   <header class="masthead">
     <div class="kicker">
-      <span class="kicker-brand"><span class="ss ss1">$</span>PLIT<span class="ss ss2">$</span>TACK</span>
+      <span class="kicker-brand"><span class="ss">$</span>PLIT<span class="ss">$</span>TACK</span>
       <span id="groupCodeBadge" style="font-family:'Space Mono',monospace;font-size:10px;
         background:rgba(252,251,247,.14);border:1px solid rgba(252,251,247,.2);border-radius:6px;
         padding:2px 7px;letter-spacing:.06em;"></span>
