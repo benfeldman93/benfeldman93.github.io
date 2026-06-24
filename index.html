@@ -176,6 +176,24 @@
     font-weight:600;color:var(--ink-soft);cursor:pointer;user-select:none;transition:.12s}
   .chip[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
   .chip.city[aria-pressed="true"]{background:var(--stamp);border-color:var(--stamp)}
+  /* ── city combobox ── */
+  .city-wrap{position:relative;margin-top:4px}
+  .city-input{width:100%;border:1px solid var(--line);background:#fff;border-radius:9px;
+    padding:10px 12px;font-family:'Public Sans',sans-serif;font-size:14px;color:var(--ink);
+    outline:none;transition:.12s;-webkit-appearance:none}
+  .city-input:focus{border-color:var(--ink)}
+  .city-input.has-city{border-color:var(--stamp);background:var(--red-soft);color:var(--stamp);font-weight:600}
+  .city-drop{position:absolute;z-index:60;top:calc(100% + 4px);left:0;right:0;
+    background:var(--paper);border:1px solid var(--line);border-radius:10px;
+    max-height:210px;overflow-y:auto;box-shadow:0 6px 24px rgba(32,40,60,.14);}
+  .city-opt{display:flex;align-items:center;padding:9px 14px;cursor:pointer;font-size:14px;
+    border-bottom:1px solid var(--line);gap:8px;user-select:none}
+  .city-opt:last-child{border-bottom:none}
+  .city-opt:hover{background:var(--kraft)}
+  .city-opt .city-del{margin-left:auto;border:none;background:none;color:var(--ink-soft);
+    cursor:pointer;font-size:16px;padding:0 4px;line-height:1;flex:0 0 auto}
+  .city-opt.city-add{color:var(--green);font-weight:600}
+  .city-opt.city-add:hover{background:var(--green-soft)}
   .seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-top:4px}
   .seg button{flex:1;border:none;background:#fff;padding:9px;font-size:13px;font-weight:600;
     color:var(--ink-soft);cursor:pointer}
@@ -469,10 +487,9 @@
       </div>
       <div class="rate-line" id="rateLine">Tracked in USD.</div>
       <label class="fl">City <span style="text-transform:none;font-weight:400">(optional)</span></label>
-      <div class="chips" id="cityChips"></div>
-      <div class="crew-add" style="margin-top:8px">
-        <input type="text" id="newCity" placeholder="Add a city…" autocomplete="off">
-        <button type="button" id="addCityBtn">+</button>
+      <div class="city-wrap" id="cityWrap">
+        <input type="text" id="cityInput" class="city-input" placeholder="Search cities…" autocomplete="off" autocapitalize="words" spellcheck="false">
+        <div class="city-drop hidden" id="cityDrop"></div>
       </div>
       <label class="fl">Split between</label>
       <div class="chips" id="partChips"></div>
@@ -543,7 +560,16 @@ try {
 }
 
 /* ══ constants ══ */
-const ITINERARY    = ["Copenhagen","Amsterdam","Berlin","Prague","Munich","Venice","Florence","Cinque Terre","Paris","Nice","Barcelona","Porto","Lisbon"];
+const ITINERARY    = [
+  "Amalfi","Amsterdam","Athens","Barcelona","Bath","Belfast","Belgrade","Berlin","Bilbao","Bologna",
+  "Bordeaux","Bratislava","Bruges","Brussels","Bucharest","Budapest","Cinque Terre","Cologne",
+  "Copenhagen","Cordoba","Corfu","Crete","Dubrovnik","Dresden","Dublin","Edinburgh","Florence",
+  "Frankfurt","Geneva","Ghent","Granada","Hamburg","Heidelberg","Helsinki","Innsbruck","Istanbul",
+  "Krakow","Lisbon","Ljubljana","London","Luxembourg","Lyon","Madrid","Marseille","Milan","Monaco",
+  "Mont Saint-Michel","Munich","Mykonos","Naples","Nice","Oslo","Oxford","Paris","Porto","Prague",
+  "Reykjavik","Riga","Rome","Salzburg","San Sebastian","Santorini","Seville","Split","Stockholm",
+  "Strasbourg","Tallinn","Thessaloniki","Turin","Valencia","Venice","Vienna","Vilnius","Warsaw","Zurich"
+].sort();
 const CURRENCIES   = ["EUR","USD","GBP","DKK","CZK","CHF","SEK","NOK","PLN","HUF"];
 const CUR_SYM      = {EUR:"€",USD:"$",GBP:"£",DKK:"kr",CZK:"Kč",CHF:"CHF",SEK:"kr",NOK:"kr",PLN:"zł",HUF:"Ft"};
 const AVATAR_COLORS= ["#C8453A","#2E7D5B","#3A5DA8","#B5762B","#7A4B9E","#1F8A8A","#A6453F","#4A7C3F"];
@@ -1299,16 +1325,7 @@ function renderAddForm() {
   payer.innerHTML = state.members.map(m =>
     `<option value="${m.id}"${m.id===meId?" selected":""}>${escHtml(m.name)}</option>`
   ).join("") || `<option value="">No members yet</option>`;
-  const allCities = [...ITINERARY, ...(state.customCities||[]).filter(c=>!ITINERARY.includes(c))];
-  $("cityChips").innerHTML = allCities.map(c => {
-    const custom = !ITINERARY.includes(c);
-    return `<button type="button" class="chip city" data-city="${escHtml(c)}" aria-pressed="${ui.selectedCity===c}">${escHtml(c)}${custom?' <span data-delcity="'+escHtml(c)+'" style="opacity:.6;margin-left:2px">×</span>':''}</button>`;
-  }).join("");
-  $("cityChips").querySelectorAll("[data-city]").forEach(c =>
-    c.onclick=(e)=>{
-      if (e.target.dataset.delcity!==undefined) { removeCity(e.target.dataset.delcity); return; }
-      ui.selectedCity=ui.selectedCity===c.dataset.city?null:c.dataset.city; renderAddForm();
-    });
+  if (cityPicker) cityPicker.sync();
   $("partChips").innerHTML = state.members.map(m =>
     `<button type="button" class="chip" data-part="${m.id}" aria-pressed="${ui.participants.has(m.id)}">${escHtml(m.name)}</button>`
   ).join("") || `<span class="sub">No members yet.</span>`;
@@ -1447,18 +1464,71 @@ async function markPaid(from, to, amt) {
   await store.addPayment(uid(), {from, to, amount: round2(amt), ts: Date.now()});
 }
 
-async function addCity() {
-  const v=$("newCity").value.trim(); if(!v) return;
-  const existing=[...ITINERARY, ...(state.customCities||[])];
-  if (!existing.some(c=>c.toLowerCase()===v.toLowerCase())) {
-    await store.setCities([...(state.customCities||[]), v]);
-  }
-  ui.selectedCity=v; $("newCity").value=""; renderAddForm();
-}
 async function removeCity(name) {
-  await store.setCities((state.customCities||[]).filter(c=>c!==name));
-  if (ui.selectedCity===name) ui.selectedCity=null;
+  if (store) await store.setCities((state.customCities||[]).filter(c=>c!==name));
+  if (ui.selectedCity===name && cityPicker) cityPicker.clear();
+  else if (ui.selectedCity===name) ui.selectedCity=null;
   renderAddForm();
+}
+
+let cityPicker = null;
+function initCityPicker() {
+  const input = $("cityInput"), drop = $("cityDrop");
+  if (!input || !drop) return null;
+
+  const itinLower = ITINERARY.map(c=>c.toLowerCase());
+  function allCities() {
+    return [...ITINERARY, ...(state.customCities||[]).filter(c=>!itinLower.includes(c.toLowerCase()))];
+  }
+  function isCustom(c) { return !itinLower.includes(c.toLowerCase()); }
+
+  function populate(q) {
+    const query = (q||"").trim().toLowerCase();
+    const cities = allCities();
+    const filtered = query ? cities.filter(c=>c.toLowerCase().includes(query)) : cities;
+    const canAdd = query && !cities.some(c=>c.toLowerCase()===query);
+    drop.innerHTML = filtered.map(c =>
+      `<div class="city-opt" data-pick="${escHtml(c)}"><span>${escHtml(c)}</span>${
+        isCustom(c)?`<button class="city-del" data-del="${escHtml(c)}" title="Remove">×</button>`:''
+      }</div>`
+    ).join("") + (canAdd
+      ? `<div class="city-opt city-add" data-add="${escHtml(q)}">+ Add "${escHtml(q)}"</div>`
+      : "");
+    drop.querySelectorAll("[data-pick]").forEach(el =>
+      el.onclick = e => { if (e.target.closest("[data-del]")) return; e.stopPropagation(); pick(el.dataset.pick); }
+    );
+    drop.querySelectorAll("[data-del]").forEach(el =>
+      el.onclick = e => { e.stopPropagation(); removeCity(el.dataset.del); }
+    );
+    const addEl = drop.querySelector("[data-add]");
+    if (addEl) addEl.onclick = e => { e.stopPropagation(); addCustom(addEl.dataset.add); };
+    drop.classList.toggle("hidden", filtered.length===0 && !canAdd);
+  }
+
+  function pick(name) {
+    ui.selectedCity = name;
+    input.value = name;
+    input.classList.add("has-city");
+    drop.classList.add("hidden");
+  }
+
+  async function addCustom(name) {
+    const existing = allCities();
+    if (!existing.some(c=>c.toLowerCase()===name.toLowerCase())) {
+      if (store) await store.setCities([...(state.customCities||[]), name]);
+    }
+    pick(name);
+  }
+
+  input.oninput  = () => { if (!input.value.trim()) { ui.selectedCity=null; input.classList.remove("has-city"); } populate(input.value); };
+  input.onfocus  = () => populate(input.value);
+  input.onkeydown= e => { if (e.key==="Escape") { drop.classList.add("hidden"); input.blur(); } };
+  document.addEventListener("pointerdown", e => { if (!$("cityWrap")?.contains(e.target)) drop.classList.add("hidden"); }, true);
+
+  return {
+    sync()  { if (document.activeElement!==input) { input.value=ui.selectedCity||""; input.classList.toggle("has-city",!!ui.selectedCity); } },
+    clear() { ui.selectedCity=null; input.value=""; input.classList.remove("has-city"); drop.classList.add("hidden"); }
+  };
 }
 
 async function addExpense() {
@@ -1499,7 +1569,8 @@ async function addExpense() {
   });
   $("addBtn").disabled = false;
   $("expDesc").value=""; $("expAmt").value="";
-  ui.selectedCity=null; ui.splitMode="even"; ui.customSplits={}; ui.lineItems=[];
+  if (cityPicker) cityPicker.clear(); else ui.selectedCity=null;
+  ui.splitMode="even"; ui.customSplits={}; ui.lineItems=[];
   ui.manualRate=""; ui.forceManual=false; ui.scanError=null; ui.itemScanError=null;
   ui.receiptB64=null; ui.receiptMime=null;
   ui.participants = new Set(state.members.map(m=>m.id));
@@ -1526,8 +1597,7 @@ $("expDate").onchange  = e => { ui.date=e.target.value||todayISO(); ui.manualRat
 $("scanZone").onclick  = () => $("scanInput").click();
 $("scanInput").onchange= e => { const f=e.target.files?.[0]; if(f) scanScreenshot(f); e.target.value=""; };
 $("itemScanInput").onchange = e => { const f=e.target.files?.[0]; if(f) scanBillItems(f); e.target.value=""; };
-$("addCityBtn").onclick= addCity;
-$("newCity").onkeydown = e => { if(e.key==="Enter"){e.preventDefault();addCity();} };
+cityPicker = initCityPicker();
 $("addTodoBtn").onclick= addTodo;
 $("newTodo").onkeydown = e => { if(e.key==="Enter"){e.preventDefault();addTodo();} };
 $("tripName").addEventListener("blur", e => { const v=e.target.textContent.trim()||"SplitStack"; e.target.textContent=v; if(store) store.setTripName(v); });
