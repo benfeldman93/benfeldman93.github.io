@@ -896,19 +896,22 @@ function makeSupabaseStore(groupId) {
     },
 
     async delExpense(id) {            /* soft delete — recoverable from History */
-      await sb.from("expenses").update({deleted: true}).eq("id", id);
+      const {error} = await sb.from("expenses").update({deleted: true}).eq("id", id);
+      if (error) { alert("Could not remove expense: " + error.message); return; }
       if (sub) sub(await fetchState());
       flashSaved();
     },
 
     async restoreExpense(id) {
-      await sb.from("expenses").update({deleted: false}).eq("id", id);
+      const {error} = await sb.from("expenses").update({deleted: false}).eq("id", id);
+      if (error) { alert("Could not restore expense: " + error.message); return; }
       if (sub) sub(await fetchState());
       flashSaved();
     },
 
     async purgeExpense(id) {          /* permanent delete */
-      await sb.from("expenses").delete().eq("id", id);
+      const {error} = await sb.from("expenses").delete().eq("id", id);
+      if (error) { alert("Could not delete expense: " + error.message); return; }
       if (sub) sub(await fetchState());
       flashSaved();
     },
