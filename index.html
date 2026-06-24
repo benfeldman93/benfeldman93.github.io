@@ -282,6 +282,11 @@
   .exp.is-deleted{opacity:.72;border-style:dashed}
 
   /* ── profile ── */
+  .chip-filter{padding:5px 12px;border-radius:20px;border:1.5px solid var(--line);background:var(--card);color:var(--ink-soft);font-size:13px;cursor:pointer;transition:.12s}
+  .chip-filter.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .hist-date-group{margin-bottom:4px}
+  .hist-date-label{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);padding:10px 0 5px;border-bottom:1px solid var(--line);margin-bottom:6px}
+  .hist-date-group:first-child .hist-date-label{padding-top:2px}
   .member-li{cursor:pointer;transition:.12s;border-radius:10px;padding:9px;margin:-2px -9px}
   .member-li:hover{background:var(--kraft)}
   .member-li .nm-col{flex:1;min-width:0}
@@ -585,10 +590,11 @@
     <div class="card">
       <h2>Expense history</h2>
       <p class="sub">Everything logged, newest first. Dollar value is locked at the day's rate.</p>
-      <div class="seg" id="histSeg" style="margin-bottom:14px">
+      <div class="seg" id="histSeg" style="margin-bottom:10px">
         <button type="button" data-hview="active"  aria-pressed="true">Active</button>
         <button type="button" data-hview="deleted" aria-pressed="false">Recently deleted</button>
       </div>
+      <div id="histFilterRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px"></div>
       <div id="histList"></div>
     </div>
   </section>
@@ -657,7 +663,7 @@ let ui     = {tab:"settle", selectedCity:null, participants:new Set(), splitMode
               customSplits:{}, currency:"EUR", date:todayISO(), liveRate:null,
               rateLoading:false, manualRate:"", forceManual:false, scanBusy:false, scanError:null,
               lineItems:[], itemScanBusy:false, itemScanError:null,
-              receiptB64:null, receiptMime:null, histView:"active"};
+              receiptB64:null, receiptMime:null, histView:"active", histFilter:"all"};
 let GROUP_ID = null, GROUP_CODE = null, meId = null, editingExpenseId = null;
 let rateReqId = 0, partsInit = false, store = null;
 
@@ -1358,40 +1364,108 @@ function renderNet() {
 }
 
 function renderHistory() {
-  const el=$("histList");
-  $("histSeg").querySelectorAll("[data-hview]").forEach(b => {
-    b.setAttribute("aria-pressed", ui.histView===b.dataset.hview);
-    b.onclick=()=>{ ui.histView=b.dataset.hview; renderHistory(); };
-  });
-  const deletedView = ui.histView==="deleted";
-  const list = deletedView ? (state.deletedExpenses||[]) : state.expenses;
+  const el = $("histList");
 
-  if (list.length===0) {
+  /* active/deleted segment */
+  $("histSeg").querySelectorAll("[data-hview]").forEach(b => {
+    b.setAttribute("aria-pressed", ui.histView === b.dataset.hview);
+    b.onclick = () => { ui.histView = b.dataset.hview; renderHistory(); };
+  });
+
+  const deletedView = ui.histView === "deleted";
+
+  /* filter chips — only shown for active view */
+  const fr = $("histFilterRow");
+  if (deletedView) {
+    fr.innerHTML = "";
+    ui.histFilter = "all";
+  } else {
+    const chips = [
+      {key:"all",  label:"All"},
+      {key:"me",   label:"Includes you"},
+      {key:"paid", label:"You paid"},
+    ];
+    fr.innerHTML = chips.map(c =>
+      `<button type="button" class="chip-filter${ui.histFilter===c.key?' active':''}" data-hf="${c.key}">${c.label}</button>`
+    ).join("");
+    fr.querySelectorAll("[data-hf]").forEach(b => {
+      b.onclick = () => { ui.histFilter = b.dataset.hf; renderHistory(); };
+    });
+  }
+
+  /* source list */
+  let list = deletedView ? (state.deletedExpenses || []) : state.expenses;
+
+  /* apply filter */
+  if (!deletedView && ui.histFilter !== "all") {
+    list = list.filter(e =>
+      ui.histFilter === "paid"
+        ? e.payer === meId
+        : (e.payer === meId || (e.participants || []).includes(meId))
+    );
+  }
+
+  if (list.length === 0) {
     el.innerHTML = deletedView
-      ? empty("🗑️","Nothing deleted","Removed expenses show up here so you can restore them.")
-      : empty("🧾","No expenses logged","Add your first one from the Add tab.");
+      ? empty("🗑️", "Nothing deleted", "Removed expenses show up here so you can restore them.")
+      : ui.histFilter !== "all"
+        ? empty("🔍", "No matching expenses", "Try a different filter or clear to see everything.")
+        : empty("🧾", "No expenses logged", "Add your first one from the Add tab.");
     return;
   }
-  el.innerHTML = [...list].reverse().map((e,idx) => {
-    const icon=EXP_ICONS[(list.length-1-idx)%EXP_ICONS.length];
-    const cityTxt=e.city?`${e.city} · `:"";
-    const orig=(e.origCurrency&&e.origCurrency!=="USD")
-      ? `<div class="o">${fmtOrig(e.origAmount,e.origCurrency)} · ${dateShort(e.date)}</div>`
-      : `<div class="o">${dateShort(e.date||todayISO())}</div>`;
-    const receipt = e.receiptUrl ? `<a class="rcpt" href="${e.receiptUrl}" target="_blank" rel="noopener">📷 receipt</a>` : "";
-    const editBtn = deletedView ? "" : `<button class="edit-entry" data-edit="${e.id}">✏ Edit</button>`;
-    const actions = deletedView
-      ? `<button class="del go" data-restore="${e.id}">Restore</button><button class="del danger" data-purge="${e.id}">Delete</button>`
-      : `<button class="del danger" data-del="${e.id}">Remove</button>`;
-    return `<div class="exp${deletedView?' is-deleted':''}"><div class="ic">${icon}</div>
-      <div class="meta"><div class="d">${escHtml(e.desc)||"Expense"}</div>
-      <div class="s">${cityTxt}${escHtml(nameOf(e.payer))} paid · ${e.splitMode==="even"?`split equally, ${e.participants.length} way${e.participants.length!==1?'s':''}`:`custom split · ${e.participants.length} way${e.participants.length!==1?'s':''}`}</div>${receipt}${editBtn}</div>
-      <div class="ea"><div class="v">${fmtUSD(e.amountUSD)}</div>${orig}${actions}</div></div>`;
+
+  /* sort newest first */
+  const sorted = [...list].sort((a, b) => {
+    const da = a.date || "1970-01-01", db = b.date || "1970-01-01";
+    return da < db ? 1 : da > db ? -1 : 0;
+  });
+
+  /* group by date */
+  const groups = [];
+  let lastDate = null;
+  sorted.forEach((e, idx) => {
+    const d = e.date || todayISO();
+    if (d !== lastDate) { groups.push({date: d, items: []}); lastDate = d; }
+    groups[groups.length - 1].items.push({e, globalIdx: idx});
+  });
+
+  /* friendly date label */
+  function dateLabel(iso) {
+    const today = todayISO();
+    const yest  = new Date(Date.now() - 864e5).toISOString().slice(0,10);
+    if (iso === today) return "Today";
+    if (iso === yest)  return "Yesterday";
+    const [y,mo,d] = iso.split("-");
+    return new Date(+y, +mo-1, +d).toLocaleDateString("en-US", {month:"long", day:"numeric", year:"numeric"});
+  }
+
+  el.innerHTML = groups.map(g => {
+    const rows = g.items.map(({e, globalIdx}) => {
+      const icon = EXP_ICONS[globalIdx % EXP_ICONS.length];
+      const cityTxt = e.city ? `${e.city} · ` : "";
+      const orig = (e.origCurrency && e.origCurrency !== "USD")
+        ? `<div class="o">${fmtOrig(e.origAmount, e.origCurrency)}</div>`
+        : "";
+      const receipt = e.receiptUrl ? `<a class="rcpt" href="${e.receiptUrl}" target="_blank" rel="noopener">📷 receipt</a>` : "";
+      const editBtn = deletedView ? "" : `<button class="edit-entry" data-edit="${e.id}">✏ Edit</button>`;
+      const actions = deletedView
+        ? `<button class="del go" data-restore="${e.id}">Restore</button><button class="del danger" data-purge="${e.id}">Delete</button>`
+        : `<button class="del danger" data-del="${e.id}">Remove</button>`;
+      return `<div class="exp${deletedView ? ' is-deleted' : ''}"><div class="ic">${icon}</div>
+        <div class="meta"><div class="d">${escHtml(e.desc) || "Expense"}</div>
+        <div class="s">${cityTxt}${escHtml(nameOf(e.payer))} paid · ${e.splitMode === "even" ? `split equally, ${e.participants.length} way${e.participants.length !== 1 ? 's' : ''}` : `custom split · ${e.participants.length} way${e.participants.length !== 1 ? 's' : ''}`}</div>${receipt}${editBtn}</div>
+        <div class="ea"><div class="v">${fmtUSD(e.amountUSD)}</div>${orig}${actions}</div></div>`;
+    }).join("");
+    return `<div class="hist-date-group">
+      <div class="hist-date-label">${dateLabel(g.date)}</div>
+      ${rows}
+    </div>`;
   }).join("");
-  el.querySelectorAll("[data-del]").forEach(b => b.onclick=()=>store.delExpense(b.dataset.del));
-  el.querySelectorAll("[data-restore]").forEach(b => b.onclick=()=>store.restoreExpense(b.dataset.restore));
-  el.querySelectorAll("[data-purge]").forEach(b => b.onclick=()=>{ if(confirm("Permanently delete this expense? This cannot be undone.")) store.purgeExpense(b.dataset.purge); });
-  el.querySelectorAll("[data-edit]").forEach(b => b.onclick=()=>{ const e=state.expenses.find(x=>x.id===b.dataset.edit); if(e) openEditExpense(e); });
+
+  el.querySelectorAll("[data-del]").forEach(b => b.onclick = () => store.delExpense(b.dataset.del));
+  el.querySelectorAll("[data-restore]").forEach(b => b.onclick = () => store.restoreExpense(b.dataset.restore));
+  el.querySelectorAll("[data-purge]").forEach(b => b.onclick = () => { if (confirm("Permanently delete this expense? This cannot be undone.")) store.purgeExpense(b.dataset.purge); });
+  el.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => { const e = state.expenses.find(x => x.id === b.dataset.edit); if (e) openEditExpense(e); });
 }
 
 function avatarEl(m, size=36) {
