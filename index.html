@@ -1165,7 +1165,7 @@ function renderMyCard() {
   else            head=`<div class="my-head zero">$0.00</div><div class="my-sub">you're all square</div>`;
   const lines = [
     ...owed.map(p=>`<div class="my-line"><span class="t">${escHtml(nameOf(p.from))} owes you</span><span class="v in">${fmtUSD(p.amt)}</span><button class="mark-paid" data-from="${p.from}" data-to="${p.to}" data-amt="${p.amt}">Mark paid</button></div>`),
-    ...owe.map( p=>`<div class="my-line"><span class="t">You owe ${escHtml(nameOf(p.to))}</span><span class="v out">${fmtUSD(p.amt)}</span><button class="mark-paid" data-from="${p.from}" data-to="${p.to}" data-amt="${p.amt}">Mark paid</button></div>`)
+    ...owe.map( p=>`<div class="my-line"><span class="t">You owe ${escHtml(nameOf(p.to))}</span><span class="v out">${fmtUSD(p.amt)}</span><span style="font-size:11px;color:var(--ink-soft);flex:0 0 auto;margin-left:12px;width:96px;text-align:center">${escHtml(nameOf(p.to))} confirms</span></div>`)
   ].join("");
   body.innerHTML = head + (lines || `<div class="my-sub">Nothing to settle for you right now.</div>`);
   body.querySelectorAll(".mark-paid").forEach(b => b.onclick=()=>markPaid(b.dataset.from,b.dataset.to,parseFloat(b.dataset.amt)));
@@ -1182,7 +1182,10 @@ function renderSettle() {
     if (p.from===meId) who=`You<span class="arrow">pay →</span>${escHtml(nameOf(p.to))}`;
     else if(p.to===meId) who=`${escHtml(nameOf(p.from))}<span class="arrow">pays →</span>you`;
     else who=`${escHtml(nameOf(p.from))}<span class="arrow">pays →</span>${escHtml(nameOf(p.to))}`;
-    return `<div class="stub${mine}"><span class="who">${who}</span><span class="amt">${fmtUSD(p.amt)}</span><button class="mark-paid" data-from="${p.from}" data-to="${p.to}" data-amt="${p.amt}">Mark paid</button></div>`;
+    const btn = p.to===meId
+      ? `<button class="mark-paid" data-from="${p.from}" data-to="${p.to}" data-amt="${p.amt}">Mark paid</button>`
+      : `<span style="font-size:11px;color:var(--ink-soft);flex:0 0 auto;margin-left:12px">awaiting ${escHtml(nameOf(p.to))}</span>`;
+    return `<div class="stub${mine}"><span class="who">${who}</span><span class="amt">${fmtUSD(p.amt)}</span>${btn}</div>`;
   }).join("");
   el.querySelectorAll(".mark-paid").forEach(b => b.onclick=()=>markPaid(b.dataset.from,b.dataset.to,parseFloat(b.dataset.amt)));
   renderSettled();
