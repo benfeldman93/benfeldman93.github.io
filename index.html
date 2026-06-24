@@ -525,13 +525,8 @@
     </div>
     <div class="card">
       <h2>Who pays who</h2>
-      <p class="sub">The fewest payments that clear every debt, all in USD.</p>
+      <p class="sub">What each person directly owes each other, based on who actually paid for what.</p>
       <div id="settleList"></div>
-    </div>
-    <div class="card">
-      <h2>Between everyone</h2>
-      <p class="sub">Raw bilateral balances — what each person specifically owes each other, before any optimization.</p>
-      <div id="pairList"></div>
     </div>
     <div class="card">
       <h2>Running balance</h2>
@@ -1389,10 +1384,10 @@ function renderMyCard() {
 
 function renderSettle() {
   const el=$("settleList");
-  if (state.members.length<2)     { el.innerHTML=empty("👥","Only you here","Share the invite link in the Crew tab to add your crew."); renderPairBalances(); renderSettled(); return; }
-  if (state.expenses.length===0)  { el.innerHTML=empty("🧾","Nothing to settle yet","Log a few expenses and the payments show up here."); renderPairBalances(); renderSettled(); return; }
-  const s=settlements();
-  if (s.length===0) { el.innerHTML=`<div class="allset"><span class="em">✅</span><div><div class="t">All square</div><div class="x">Nobody owes anybody.</div></div></div>`; renderPairBalances(); renderSettled(); return; }
+  if (state.members.length<2)     { el.innerHTML=empty("👥","Only you here","Share the invite link in the Crew tab to add your crew."); renderSettled(); return; }
+  if (state.expenses.length===0)  { el.innerHTML=empty("🧾","Nothing to settle yet","Log a few expenses and the payments show up here."); renderSettled(); return; }
+  const s=pairBalances();
+  if (s.length===0) { el.innerHTML=`<div class="allset"><span class="em">✅</span><div><div class="t">All square</div><div class="x">Nobody owes anybody.</div></div></div>`; renderSettled(); return; }
   el.innerHTML = s.map(p => {
     const mine=(p.from===meId||p.to===meId)?" mine":""; let who;
     if (p.from===meId) who=`You<span class="arrow">pay →</span>${escHtml(nameOf(p.to))}`;
@@ -1400,7 +1395,6 @@ function renderSettle() {
     else who=`${escHtml(nameOf(p.from))}<span class="arrow">pays →</span>${escHtml(nameOf(p.to))}`;
     return `<div class="stub${mine}"><span class="who">${who}</span><span class="amt">${fmtUSD(p.amt)}</span></div>`;
   }).join("");
-  renderPairBalances();
   renderSettled();
 }
 
