@@ -90,6 +90,11 @@
   /* ── my card ── */
   #myCard{background:var(--ink);color:var(--paper);border-color:var(--ink)}
   #myCard h2{color:var(--paper)}
+  .my-stat-strip{display:flex;align-items:stretch;gap:0;background:rgba(255,255,255,.07);border-radius:10px;padding:12px 16px;margin-bottom:14px}
+  .my-stat{flex:1;text-align:center}
+  .my-stat-val{font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:#fff}
+  .my-stat-lbl{font-size:11px;color:rgba(255,255,255,.55);margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
+  .my-stat-div{width:1px;background:rgba(255,255,255,.15);margin:0 4px}
   .my-head{font-family:'Space Mono',monospace;font-size:24px;font-weight:700;margin:2px 0 2px}
   .my-head.pos{color:#7FD8AC}.my-head.neg{color:#F0A79E}.my-head.zero{color:rgba(252,251,247,.7)}
   .my-sub{font-size:12.5px;color:rgba(252,251,247,.6);margin-bottom:12px}
@@ -1368,17 +1373,35 @@ function renderMyCard() {
   const card=$("myCard"),body=$("mySummary");
   if (!meId||state.members.length<2||state.expenses.length===0) { card.classList.add("hidden"); return; }
   card.classList.remove("hidden"); $("myCardTitle").textContent = nameOf(meId)+"'s tab";
-  const net=round2(netBalances()[meId]||0); const s=settlements();
-  const owed=s.filter(p=>p.to===meId), owe=s.filter(p=>p.from===meId);
+
+  const totalPaid  = round2(state.expenses.reduce((s,e) => e.payer===meId ? s+e.amountUSD : s, 0));
+  const totalShare = round2(state.expenses.reduce((s,e) => s+shareFor(e,meId), 0));
+  const net=round2(netBalances()[meId]||0);
+
+  const strip = `<div class="my-stat-strip">
+    <div class="my-stat">
+      <div class="my-stat-val">${fmtUSD(totalPaid)}</div>
+      <div class="my-stat-lbl">you paid out</div>
+    </div>
+    <div class="my-stat-div"></div>
+    <div class="my-stat">
+      <div class="my-stat-val">${fmtUSD(totalShare)}</div>
+      <div class="my-stat-lbl">your share</div>
+    </div>
+  </div>`;
+
   let head;
-  if (net>0.009)  head=`<div class="my-head pos">+${fmtUSD(net)}</div><div class="my-sub">the crew owes you, net</div>`;
+  if (net>0.009)   head=`<div class="my-head pos">+${fmtUSD(net)}</div><div class="my-sub">the crew owes you, net</div>`;
   else if(net<-0.009) head=`<div class="my-head neg">-${fmtUSD(-net)}</div><div class="my-sub">you owe the pot, net</div>`;
-  else            head=`<div class="my-head zero">$0.00</div><div class="my-sub">you're all square</div>`;
+  else             head=`<div class="my-head zero">$0.00</div><div class="my-sub">you're all square</div>`;
+
+  const s=pairBalances();
+  const owed=s.filter(p=>p.to===meId), owe=s.filter(p=>p.from===meId);
   const lines = [
     ...owed.map(p=>`<div class="my-line"><span class="t">${escHtml(nameOf(p.from))} owes you</span><span class="v in">${fmtUSD(p.amt)}</span><button class="mark-paid" data-from="${p.from}" data-to="${p.to}" data-amt="${p.amt}">Mark paid</button></div>`),
     ...owe.map( p=>`<div class="my-line"><span class="t">You owe ${escHtml(nameOf(p.to))}</span><span class="v out">${fmtUSD(p.amt)}</span><span style="font-size:11px;color:var(--ink-soft);flex:0 0 auto;margin-left:12px;width:96px;text-align:center">${escHtml(nameOf(p.to))} confirms</span></div>`)
   ].join("");
-  body.innerHTML = head + (lines || `<div class="my-sub">Nothing to settle for you right now.</div>`);
+  body.innerHTML = strip + head + (lines || `<div class="my-sub">Nothing to settle for you right now.</div>`);
   body.querySelectorAll(".mark-paid").forEach(b => b.onclick=()=>markPaid(b.dataset.from,b.dataset.to,parseFloat(b.dataset.amt)));
 }
 
