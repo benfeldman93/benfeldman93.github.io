@@ -248,8 +248,13 @@
   .exp .ea{margin-left:auto;text-align:right;flex:0 0 auto}
   .exp .ea .v{font-family:'Space Mono',monospace;font-weight:700;font-size:15px}
   .exp .ea .o{font-size:11px;color:var(--ink-soft);font-family:'Space Mono',monospace}
-  .exp .ea .del{display:block;margin-left:auto;background:none;border:none;color:var(--ink-soft);font-size:11.5px;cursor:pointer;margin-top:2px}
-  .exp .ea .del:hover{color:var(--stamp)}
+  .exp .ea .del{display:inline-block;margin-top:6px;margin-left:6px;border:1px solid var(--line);
+    background:#fff;color:var(--ink-soft);font-size:12.5px;font-weight:700;cursor:pointer;
+    border-radius:8px;padding:8px 12px;font-family:'Bricolage Grotesque',sans-serif}
+  .exp .ea .del.danger{color:#fff;background:var(--stamp);border-color:var(--stamp)}
+  .exp .ea .del.danger:hover{background:var(--stamp-deep)}
+  .exp .ea .del.go{color:var(--green);background:var(--green-soft);border-color:#BFE0CE}
+  .exp .ea .del.go:hover{background:var(--green);color:#fff}
   .exp.is-deleted{opacity:.72;border-style:dashed}
 
   /* ── misc ── */
@@ -276,6 +281,32 @@
     opacity:0;transition:.25s;pointer-events:none;z-index:90}
   .save-flag.show{opacity:1}
   .hidden{display:none}
+
+  /* ── tighter, more consistent sizing on phones ── */
+  @media (max-width:480px){
+    body{font-size:13.5px}
+    .wrap{padding:14px 12px 110px}
+    .masthead{padding:16px 16px 12px}
+    .trip-name{font-size:23px}
+    .total-amt{font-size:18px}
+    .total-lbl,.kicker{font-size:10px}
+    .tabs{padding:3px;gap:3px}
+    .tab{font-size:12px;padding:8px 2px}
+    .card{padding:14px}
+    .card h2{font-size:15.5px}
+    .card .sub{font-size:12px}
+    .my-head{font-size:20px}
+    .my-line .t{font-size:13px}
+    .stub .who,.net-name,.member-li .nm,.todo-li .tx{font-size:13.5px}
+    .stub .amt{font-size:14.5px;min-width:66px}
+    .net-val{font-size:14px}
+    .exp .meta .d{font-size:13.5px}
+    .exp .meta .s{font-size:11.5px}
+    .exp .ea .v{font-size:14px}
+    .chip{font-size:12.5px;padding:6px 11px}
+    /* keep form fields at 16px so iOS doesn't zoom in on focus */
+    input[type=text],input[type=number],input[type=date],input[type=password],select{font-size:16px}
+  }
   @media(prefers-reduced-motion:reduce){*{transition:none!important}.spinner{animation:none}}
 </style>
 </head>
@@ -1167,8 +1198,8 @@ function renderHistory() {
       : `<div class="o">${dateShort(e.date||todayISO())}</div>`;
     const receipt = e.receiptUrl ? `<a class="rcpt" href="${e.receiptUrl}" target="_blank" rel="noopener">📷 receipt</a>` : "";
     const actions = deletedView
-      ? `<button class="del" data-restore="${e.id}" style="color:var(--green)">restore</button><button class="del" data-purge="${e.id}">delete forever</button>`
-      : `<button class="del" data-del="${e.id}">remove</button>`;
+      ? `<button class="del go" data-restore="${e.id}">Restore</button><button class="del danger" data-purge="${e.id}">Delete</button>`
+      : `<button class="del danger" data-del="${e.id}">Remove</button>`;
     return `<div class="exp${deletedView?' is-deleted':''}"><div class="ic">${icon}</div>
       <div class="meta"><div class="d">${escHtml(e.desc)||"Expense"}</div>
       <div class="s">${cityTxt}${escHtml(nameOf(e.payer))} paid · split ${e.participants.length} way${e.participants.length!==1?'s':''}</div>${receipt}</div>
