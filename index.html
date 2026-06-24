@@ -286,6 +286,10 @@
   .chip-filter.active{background:var(--accent);color:#fff;border-color:var(--accent)}
   .hist-paid-select{padding:5px 10px;border-radius:20px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);font-size:13px;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:26px}
   .hist-paid-select:focus{outline:none;border-color:var(--accent)}
+  .coverage-row{display:flex;align-items:center;gap:8px;padding:5px 10px;background:var(--kraft);border-radius:8px;margin-bottom:4px;font-size:13px}
+  .cv-label{flex:1}
+  .cv-remove{border:none;background:none;font-size:16px;color:var(--ink-soft);cursor:pointer;line-height:1;padding:0 2px}
+  .cv-remove:hover{color:var(--red)}
   .hist-date-group{margin-bottom:4px}
   .hist-date-label{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);padding:10px 0 5px;border-bottom:1px solid var(--line);margin-bottom:6px}
   .hist-date-group:first-child .hist-date-label{padding-top:2px}
@@ -581,6 +585,18 @@
       </div>
       <label class="fl">Split between</label>
       <div class="chips" id="partChips"></div>
+      <div id="coverageSection" class="hidden">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <label class="fl" style="margin:0;flex:1">Someone covering another? <span style="font-weight:400;text-transform:none">(optional)</span></label>
+        </div>
+        <div id="coverageList"></div>
+        <div id="coverageAddRow" style="display:flex;gap:6px;align-items:center;margin-top:4px">
+          <select id="coveringSelect" style="flex:1;padding:7px 10px;border:1.5px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:13px"></select>
+          <span style="font-size:12px;color:var(--ink-soft);white-space:nowrap">covers</span>
+          <select id="coveredSelect"  style="flex:1;padding:7px 10px;border:1.5px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:13px"></select>
+          <button type="button" id="addCoverageBtn" class="btn" style="padding:7px 12px;white-space:nowrap">+ Add</button>
+        </div>
+      </div>
       <label class="fl">How</label>
       <div class="seg" id="splitSeg">
         <button type="button" data-mode="even"   aria-pressed="true">Split evenly</button>
@@ -674,7 +690,7 @@ let ui     = {tab:"settle", selectedCity:null, participants:new Set(), splitMode
               customSplits:{}, currency:"EUR", date:todayISO(), liveRate:null,
               rateLoading:false, manualRate:"", forceManual:false, scanBusy:false, scanError:null,
               lineItems:[], itemScanBusy:false, itemScanError:null,
-              receiptB64:null, receiptMime:null, histView:"active", histFilter:"all", histPaidBy:"", histSearch:""};
+              receiptB64:null, receiptMime:null, histView:"active", histFilter:"all", histPaidBy:"", histSearch:"", coverages:{}};
 let GROUP_ID = null, GROUP_CODE = null, meId = null, editingExpenseId = null;
 let rateReqId = 0, partsInit = false, store = null;
 
@@ -955,6 +971,7 @@ function makeSupabaseStore(groupId) {
       participants: e.participants || [],
       splitMode:    e.split_mode,
       customSplits: e.custom_splits,
+      coverages:    e.coverages || {},
       city:         e.city,
       receiptUrl:   e.receipt_url || null,
       deleted:      !!e.deleted,
@@ -1052,6 +1069,7 @@ function makeSupabaseStore(groupId) {
         participants: e.participants,
         split_mode:   e.splitMode,
         custom_splits:e.customSplits,
+        coverages:    e.coverages || null,
         city:         e.city,
         receipt_url:  e.receiptUrl || null
       }).eq("id", id);
@@ -1073,6 +1091,7 @@ function makeSupabaseStore(groupId) {
         participants: e.participants,
         split_mode:   e.splitMode,
         custom_splits:e.customSplits,
+        coverages:    e.coverages || null,
         city:         e.city,
         receipt_url:  e.receiptUrl || null
       });
@@ -1280,7 +1299,10 @@ function showScan() {
 function shareFor(exp, id) {
   if (!exp.participants.includes(id)) return 0;
   if (exp.splitMode==="custom" && exp.customSplits) return Number(exp.customSplits[id]||0);
-  return exp.amountUSD / exp.participants.length;
+  const cov = exp.coverages || {};
+  if (cov[id]) return 0;  /* this person's share is absorbed by someone else */
+  const coveredByMe = exp.participants.filter(pid => cov[pid] === id).length;
+  return exp.amountUSD * (1 + coveredByMe) / exp.participants.length;
 }
 function netBalances() {
   const net = {}; state.members.forEach(m => net[m.id]=0);
@@ -1612,6 +1634,48 @@ async function addTodo() {
   await store.addTodo(uid(), v);
 }
 
+function renderCoverageSection() {
+  const parts = [...ui.participants];
+  const sec = $("coverageSection");
+  /* only show for even splits with 2+ participants */
+  if (ui.splitMode !== "even" || parts.length < 2) { sec.classList.add("hidden"); return; }
+  sec.classList.remove("hidden");
+
+  /* coverage rows */
+  const list = $("coverageList");
+  list.innerHTML = Object.entries(ui.coverages).map(([coveredId, coveringId]) => {
+    const coveredName  = nameOf(coveredId)  || coveredId;
+    const coveringName = nameOf(coveringId) || coveringId;
+    return `<div class="coverage-row">
+      <span class="cv-label">${escHtml(coveringName)} covers ${escHtml(coveredName)}</span>
+      <button type="button" class="cv-remove" data-uncover="${coveredId}">×</button>
+    </div>`;
+  }).join("");
+  list.querySelectorAll("[data-uncover]").forEach(b => {
+    b.onclick = () => { delete ui.coverages[b.dataset.uncover]; renderCoverageSection(); };
+  });
+
+  /* populate dropdowns — only participants, exclude already-covered people from "covers" and payer's own slot */
+  const alreadyCovered = new Set(Object.keys(ui.coverages));
+  const covOpts = parts.map(id =>
+    `<option value="${id}">${escHtml(nameOf(id))}</option>`
+  ).join("");
+  const cedOpts = parts.filter(id => !alreadyCovered.has(id)).map(id =>
+    `<option value="${id}">${escHtml(nameOf(id))}</option>`
+  ).join("");
+  $("coveringSelect").innerHTML = covOpts;
+  $("coveredSelect").innerHTML  = cedOpts || `<option value="">— none available —</option>`;
+
+  $("addCoverageBtn").onclick = () => {
+    const covering = $("coveringSelect").value;
+    const covered  = $("coveredSelect").value;
+    if (!covering || !covered || covering === covered) return;
+    if (ui.coverages[covered]) return; /* already covered */
+    ui.coverages[covered] = covering;
+    renderCoverageSection();
+  };
+}
+
 function renderAddForm() {
   const cur=$("expCur");
   if (cur.options.length===0) cur.innerHTML = CURRENCIES.map(c=>`<option value="${c}">${c} ${CUR_SYM[c]||""}</option>`).join("");
@@ -1636,7 +1700,7 @@ function renderAddForm() {
   });
   $("customSplit").classList.toggle("hidden", ui.splitMode!=="custom");
   $("itemSplit").classList.toggle("hidden", ui.splitMode!=="items");
-  renderCustomSplit(); renderItemSplit();
+  renderCustomSplit(); renderItemSplit(); renderCoverageSection();
   $("addBtn").disabled = state.members.length < 2;
   const editing = !!editingExpenseId;
   $("editBanner").classList.toggle("hidden", !editing);
@@ -1954,6 +2018,7 @@ function openEditExpense(e) {
     ui.splitMode    = e.splitMode === "custom" ? "even" : (e.splitMode || "even");
     ui.customSplits = {};
   }
+  ui.coverages = e.coverages && typeof e.coverages === "object" ? {...e.coverages} : {};
   ui.lineItems=[]; ui.manualRate=""; ui.forceManual=false;
   ui.scanError=null; ui.itemScanError=null; ui.receiptB64=null; ui.receiptMime=null;
   switchTab("add");
@@ -1964,7 +2029,7 @@ function cancelEdit() {
   editingExpenseId = null;
   $("expDesc").value=""; $("expAmt").value="";
   if (cityPicker) cityPicker.clear(); else ui.selectedCity=null;
-  ui.splitMode="even"; ui.customSplits={}; ui.lineItems=[];
+  ui.splitMode="even"; ui.customSplits={}; ui.lineItems=[]; ui.coverages={};
   ui.manualRate=""; ui.forceManual=false;
   ui.participants = new Set(state.members.map(m=>m.id));
   renderAddForm();
@@ -1986,6 +2051,11 @@ async function addExpense() {
   const rate = effectiveRate();
   if (rate==null) { alert("Need an exchange rate to convert to USD. Enter it in the rate box."); return; }
   const amountUSD = round2(origAmount*rate);
+
+  /* strip coverages for people no longer in the split */
+  const coverages = Object.fromEntries(
+    Object.entries(ui.coverages).filter(([k,v]) => participants.includes(k) && participants.includes(v))
+  );
 
   let splitMode = ui.splitMode, customSplits = null;
   if (ui.splitMode==="custom") {
@@ -2015,7 +2085,7 @@ async function addExpense() {
     }
     await store.updateExpense(editingExpenseId, {
       desc, origAmount, origCurrency:ui.currency, rate:lockedRate, amountUSD:lockedAmountUSD,
-      date:ui.date, payer, participants, splitMode, customSplits:lockedCustomSplits,
+      date:ui.date, payer, participants, splitMode, customSplits:lockedCustomSplits, coverages,
       city:ui.selectedCity, receiptUrl: existing?.receiptUrl||null
     });
     editingExpenseId = null;
@@ -2024,13 +2094,13 @@ async function addExpense() {
     const receiptUrl = await uploadReceipt(expId);
     await store.addExpense(expId, {
       desc, origAmount, origCurrency:ui.currency, rate, amountUSD,
-      date:ui.date, payer, participants, splitMode, customSplits, city:ui.selectedCity, receiptUrl, ts:Date.now()
+      date:ui.date, payer, participants, splitMode, customSplits, coverages, city:ui.selectedCity, receiptUrl, ts:Date.now()
     });
   }
   $("addBtn").disabled = false;
   $("expDesc").value=""; $("expAmt").value="";
   if (cityPicker) cityPicker.clear(); else ui.selectedCity=null;
-  ui.splitMode="even"; ui.customSplits={}; ui.lineItems=[];
+  ui.splitMode="even"; ui.customSplits={}; ui.lineItems=[]; ui.coverages={};
   ui.manualRate=""; ui.forceManual=false; ui.scanError=null; ui.itemScanError=null;
   ui.receiptB64=null; ui.receiptMime=null;
   ui.participants = new Set(state.members.map(m=>m.id));
