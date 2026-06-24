@@ -1300,7 +1300,7 @@ function renderHistory() {
       : `<button class="del danger" data-del="${e.id}">Remove</button>`;
     return `<div class="exp${deletedView?' is-deleted':''}"><div class="ic">${icon}</div>
       <div class="meta"><div class="d">${escHtml(e.desc)||"Expense"}</div>
-      <div class="s">${cityTxt}${escHtml(nameOf(e.payer))} paid · split ${e.participants.length} way${e.participants.length!==1?'s':''}</div>${receipt}${editBtn}</div>
+      <div class="s">${cityTxt}${escHtml(nameOf(e.payer))} paid · ${e.splitMode==="even"?`split equally, ${e.participants.length} way${e.participants.length!==1?'s':''}`:`custom split · ${e.participants.length} way${e.participants.length!==1?'s':''}`}</div>${receipt}${editBtn}</div>
       <div class="ea"><div class="v">${fmtUSD(e.amountUSD)}</div>${orig}${actions}</div></div>`;
   }).join("");
   el.querySelectorAll("[data-del]").forEach(b => b.onclick=()=>store.delExpense(b.dataset.del));
