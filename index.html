@@ -987,11 +987,15 @@ function setSync(stat) {
    FX RATES
    ══════════════════════════════════════════════════════════════ */
 async function fetchRate(cur, date) {
-  const urls = [`https://api.frankfurter.app/${date}?from=${cur}&to=USD`, `https://api.frankfurter.app/latest?from=${cur}&to=USD`];
-  for (const u of urls) {
-    try { const r = await fetch(u); if (!r.ok) continue; const d = await r.json(); const rate = d?.rates?.USD; if (rate) return rate; }
-    catch(e) {}
+  /* 1. frankfurter.app — ECB rates, date-specific then latest */
+  for (const u of [`https://api.frankfurter.app/${date}?from=${cur}&to=USD`, `https://api.frankfurter.app/latest?from=${cur}&to=USD`]) {
+    try { const r=await fetch(u); if(!r.ok) continue; const d=await r.json(); if(d?.rates?.USD) return d.rates.USD; } catch(e) {}
   }
+  /* 2. open.er-api.com — free, no key */
+  try { const r=await fetch(`https://open.er-api.com/v6/latest/${cur}`); if(r.ok){const d=await r.json(); if(d?.rates?.USD) return d.rates.USD;} } catch(e) {}
+  /* 3. fawazahmed0 CDN currency API — highly available */
+  try { const r=await fetch(`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${cur.toLowerCase()}.json`);
+    if(r.ok){const d=await r.json(); const rate=d?.[cur.toLowerCase()]?.usd; if(rate) return rate;} } catch(e) {}
   return null;
 }
 async function getRate(cur, date) {
@@ -1182,12 +1186,8 @@ function renderSettle() {
     if (p.from===meId) who=`You<span class="arrow">pay →</span>${escHtml(nameOf(p.to))}`;
     else if(p.to===meId) who=`${escHtml(nameOf(p.from))}<span class="arrow">pays →</span>you`;
     else who=`${escHtml(nameOf(p.from))}<span class="arrow">pays →</span>${escHtml(nameOf(p.to))}`;
-    const btn = p.to===meId
-      ? `<button class="mark-paid" data-from="${p.from}" data-to="${p.to}" data-amt="${p.amt}">Mark paid</button>`
-      : `<span style="font-size:11px;color:var(--ink-soft);flex:0 0 auto;margin-left:12px">awaiting ${escHtml(nameOf(p.to))}</span>`;
-    return `<div class="stub${mine}"><span class="who">${who}</span><span class="amt">${fmtUSD(p.amt)}</span>${btn}</div>`;
+    return `<div class="stub${mine}"><span class="who">${who}</span><span class="amt">${fmtUSD(p.amt)}</span></div>`;
   }).join("");
-  el.querySelectorAll(".mark-paid").forEach(b => b.onclick=()=>markPaid(b.dataset.from,b.dataset.to,parseFloat(b.dataset.amt)));
   renderSettled();
 }
 
