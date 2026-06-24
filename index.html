@@ -596,6 +596,10 @@
         <button type="button" data-hview="active"  aria-pressed="true">Active</button>
         <button type="button" data-hview="deleted" aria-pressed="false">Recently deleted</button>
       </div>
+      <div style="position:relative;margin-bottom:10px">
+        <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;color:var(--ink-soft)">🔍</span>
+        <input id="histSearchInput" type="search" placeholder="Search expenses…" style="width:100%;box-sizing:border-box;padding:8px 12px 8px 32px;border:1.5px solid var(--line);border-radius:20px;background:var(--card);color:var(--ink);font-size:13px;outline:none">
+      </div>
       <div id="histFilterRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px"></div>
       <div id="histList"></div>
     </div>
@@ -665,7 +669,7 @@ let ui     = {tab:"settle", selectedCity:null, participants:new Set(), splitMode
               customSplits:{}, currency:"EUR", date:todayISO(), liveRate:null,
               rateLoading:false, manualRate:"", forceManual:false, scanBusy:false, scanError:null,
               lineItems:[], itemScanBusy:false, itemScanError:null,
-              receiptB64:null, receiptMime:null, histView:"active", histFilter:"all", histPaidBy:""};
+              receiptB64:null, receiptMime:null, histView:"active", histFilter:"all", histPaidBy:"", histSearch:""};
 let GROUP_ID = null, GROUP_CODE = null, meId = null, editingExpenseId = null;
 let rateReqId = 0, partsInit = false, store = null;
 
@@ -1407,7 +1411,11 @@ function renderHistory() {
   /* source list */
   let list = deletedView ? (state.deletedExpenses || []) : state.expenses;
 
-  /* apply filter */
+  /* sync search input without stealing focus */
+  const si = $("histSearchInput");
+  if (si && si !== document.activeElement) si.value = ui.histSearch;
+
+  /* apply filters */
   if (!deletedView) {
     if (ui.histFilter !== "all") {
       list = list.filter(e =>
@@ -1419,6 +1427,14 @@ function renderHistory() {
     if (ui.histPaidBy) {
       list = list.filter(e => e.payer === ui.histPaidBy);
     }
+  }
+  if (ui.histSearch) {
+    const q = ui.histSearch.toLowerCase();
+    list = list.filter(e =>
+      (e.desc || "").toLowerCase().includes(q) ||
+      nameOf(e.payer).toLowerCase().includes(q) ||
+      (e.city || "").toLowerCase().includes(q)
+    );
   }
 
   if (list.length === 0) {
@@ -1982,6 +1998,9 @@ $("copyShare2").onclick= copyShare;
 $("copyInviteBtn").onclick = copyShare;
 $("switchGroup").onclick= () => { if(store) store.cleanup(); GROUP_ID=null; GROUP_CODE=null; location.hash=""; showGroupScreen(); };
 $("logoutBtn").onclick = logout;
+
+/* history search */
+$("histSearchInput").oninput = e => { ui.histSearch = e.target.value; renderHistory(); };
 
 /* profile modals */
 $("profileClose").onclick      = () => $("profileModal").classList.add("hidden");
