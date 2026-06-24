@@ -529,8 +529,14 @@
       <div id="mySummary"></div>
     </div>
     <div class="card">
-      <h2>Who pays who</h2>
-      <p class="sub">What each person directly owes each other, based on who actually paid for what.</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px">
+        <h2 style="margin:0">Who pays who</h2>
+        <div class="seg" id="settleSeg" style="flex-shrink:0">
+          <button type="button" data-smode="direct"    aria-pressed="true">Direct</button>
+          <button type="button" data-smode="optimized" aria-pressed="false">Optimized</button>
+        </div>
+      </div>
+      <p class="sub" id="settleSubtitle">What each person directly owes each other, based on who actually paid for what.</p>
       <div id="settleList"></div>
     </div>
     <div class="card">
@@ -690,7 +696,7 @@ let ui     = {tab:"settle", selectedCity:null, participants:new Set(), splitMode
               customSplits:{}, currency:"EUR", date:todayISO(), liveRate:null,
               rateLoading:false, manualRate:"", forceManual:false, scanBusy:false, scanError:null,
               lineItems:[], itemScanBusy:false, itemScanError:null,
-              receiptB64:null, receiptMime:null, histView:"active", histFilter:"all", histPaidBy:"", histSearch:"", coverages:{}, payerId:null};
+              receiptB64:null, receiptMime:null, histView:"active", histFilter:"all", histPaidBy:"", histSearch:"", coverages:{}, payerId:null, settleMode:"direct"};
 let GROUP_ID = null, GROUP_CODE = null, meId = null, editingExpenseId = null;
 let rateReqId = 0, partsInit = false, store = null;
 
@@ -1407,10 +1413,23 @@ function renderMyCard() {
 
 function renderSettle() {
   const el=$("settleList");
-  if (state.members.length<2)     { el.innerHTML=empty("👥","Only you here","Share the invite link in the Crew tab to add your crew."); renderSettled(); return; }
-  if (state.expenses.length===0)  { el.innerHTML=empty("🧾","Nothing to settle yet","Log a few expenses and the payments show up here."); renderSettled(); return; }
-  const s=pairBalances();
+
+  /* toggle buttons */
+  $("settleSeg").querySelectorAll("[data-smode]").forEach(b => {
+    b.setAttribute("aria-pressed", ui.settleMode===b.dataset.smode);
+    b.onclick = () => { ui.settleMode=b.dataset.smode; renderSettle(); };
+  });
+  const optimized = ui.settleMode==="optimized";
+  $("settleSubtitle").textContent = optimized
+    ? "Fewest possible payments to clear every debt — may route through people who didn't share an expense."
+    : "What each person directly owes each other, based on who actually paid for what.";
+
+  if (state.members.length<2)    { el.innerHTML=empty("👥","Only you here","Share the invite link in the Crew tab to add your crew."); renderSettled(); return; }
+  if (state.expenses.length===0) { el.innerHTML=empty("🧾","Nothing to settle yet","Log a few expenses and the payments show up here."); renderSettled(); return; }
+
+  const s = optimized ? settlements() : pairBalances();
   if (s.length===0) { el.innerHTML=`<div class="allset"><span class="em">✅</span><div><div class="t">All square</div><div class="x">Nobody owes anybody.</div></div></div>`; renderSettled(); return; }
+
   el.innerHTML = s.map(p => {
     const mine=(p.from===meId||p.to===meId)?" mine":""; let who;
     if (p.from===meId) who=`You<span class="arrow">pay →</span>${escHtml(nameOf(p.to))}`;
