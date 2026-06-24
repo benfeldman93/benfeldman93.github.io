@@ -1182,6 +1182,8 @@ async function getRate(cur, date) {
   return rate;
 }
 async function refreshRate() {
+  /* when editing, the rate is locked to the original entry — never refetch */
+  if (editingExpenseId) { renderRateLine(); return; }
   const myId = ++rateReqId;
   if (ui.currency === "USD") { ui.liveRate = 1; ui.rateLoading = false; renderRateLine(); return; }
   ui.rateLoading = true; renderRateLine(); /* keep old liveRate while fetching — no "unavailable" flash */
@@ -1716,6 +1718,12 @@ function renderRateLine() {
   const el=$("rateLine"); const amt=expAmtNum();
   if (ui.currency==="USD") { el.innerHTML="Tracked in USD — no conversion needed."; return; }
   if (ui.rateLoading)      { el.innerHTML=`<span class="spinner" style="width:13px;height:13px;border-width:2px"></span> Fetching ${dateShort(ui.date)} rate for ${ui.currency}…`; return; }
+  /* edit mode — show the locked historical rate, no live fetch */
+  if (editingExpenseId && ui.liveRate != null) {
+    const usd = amt ? ` &nbsp;·&nbsp; <span class="usd">≈ ${fmtUSD(amt * ui.liveRate)}</span>` : "";
+    el.innerHTML = `1 ${ui.currency} = ${ui.liveRate.toFixed(4)} USD &nbsp;<span style="color:var(--ink-soft)">🔒 rate locked at entry</span>${usd}`;
+    return;
+  }
 
   const m = readNum(ui.manualRate);
   /* manual override active — either forced by the user or no live rate available */
@@ -2023,6 +2031,8 @@ function openEditExpense(e) {
   }
   ui.coverages = e.coverages && typeof e.coverages === "object" ? {...e.coverages} : {};
   ui.lineItems=[]; ui.manualRate=""; ui.forceManual=false;
+  /* lock rate to the original entry — no live refetch */
+  ui.liveRate = e.rate || null;
   ui.scanError=null; ui.itemScanError=null; ui.receiptB64=null; ui.receiptMime=null;
   switchTab("add");
   renderAddForm();
