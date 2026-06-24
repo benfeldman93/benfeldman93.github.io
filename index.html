@@ -690,7 +690,7 @@ let ui     = {tab:"settle", selectedCity:null, participants:new Set(), splitMode
               customSplits:{}, currency:"EUR", date:todayISO(), liveRate:null,
               rateLoading:false, manualRate:"", forceManual:false, scanBusy:false, scanError:null,
               lineItems:[], itemScanBusy:false, itemScanError:null,
-              receiptB64:null, receiptMime:null, histView:"active", histFilter:"all", histPaidBy:"", histSearch:"", coverages:{}};
+              receiptB64:null, receiptMime:null, histView:"active", histFilter:"all", histPaidBy:"", histSearch:"", coverages:{}, payerId:null};
 let GROUP_ID = null, GROUP_CODE = null, meId = null, editingExpenseId = null;
 let rateReqId = 0, partsInit = false, store = null;
 
@@ -1684,10 +1684,13 @@ function renderAddForm() {
   cur.value = ui.currency;
   $("expDate").value = ui.date;
   ui.participants.forEach(id => { if (!state.members.some(m=>m.id===id)) ui.participants.delete(id); });
+  if (!ui.payerId) ui.payerId = meId;
   const payer=$("expPayer");
   payer.innerHTML = state.members.map(m =>
-    `<option value="${m.id}"${m.id===meId?" selected":""}>${escHtml(m.name)}</option>`
+    `<option value="${m.id}">${escHtml(m.name)}</option>`
   ).join("") || `<option value="">No members yet</option>`;
+  payer.value = ui.payerId;
+  payer.onchange = () => { ui.payerId = payer.value; };
   if (cityPicker) cityPicker.sync();
   $("partChips").innerHTML = state.members.map(m =>
     `<button type="button" class="chip" data-part="${m.id}" aria-pressed="${ui.participants.has(m.id)}">${escHtml(m.name)}</button>`
@@ -2005,7 +2008,7 @@ function openEditExpense(e) {
   $("amtSym").textContent = CUR_SYM[ui.currency] || "";
   ui.date               = e.date || todayISO();
   const dateInp         = $("expDate"); if (dateInp) dateInp.value = ui.date;
-  const payerSel        = $("expPayer"); if (payerSel) payerSel.value = e.payer;
+  ui.payerId = e.payer;
   ui.selectedCity       = e.city || null;
   if (cityPicker) cityPicker.sync();
   ui.participants       = new Set(e.participants || state.members.map(m=>m.id));
@@ -2029,7 +2032,7 @@ function cancelEdit() {
   editingExpenseId = null;
   $("expDesc").value=""; $("expAmt").value="";
   if (cityPicker) cityPicker.clear(); else ui.selectedCity=null;
-  ui.splitMode="even"; ui.customSplits={}; ui.lineItems=[]; ui.coverages={};
+  ui.splitMode="even"; ui.customSplits={}; ui.lineItems=[]; ui.coverages={}; ui.payerId=null;
   ui.manualRate=""; ui.forceManual=false;
   ui.participants = new Set(state.members.map(m=>m.id));
   renderAddForm();
@@ -2038,7 +2041,7 @@ function cancelEdit() {
 
 async function addExpense() {
   const desc        = $("expDesc").value.trim();
-  const payer       = $("expPayer").value;
+  const payer       = ui.payerId || meId;
   const participants= [...ui.participants];
   let origAmount    = expAmtNum();
   if (!payer)                  { alert("Pick who paid."); return; }
@@ -2100,7 +2103,7 @@ async function addExpense() {
   $("addBtn").disabled = false;
   $("expDesc").value=""; $("expAmt").value="";
   if (cityPicker) cityPicker.clear(); else ui.selectedCity=null;
-  ui.splitMode="even"; ui.customSplits={}; ui.lineItems=[]; ui.coverages={};
+  ui.splitMode="even"; ui.customSplits={}; ui.lineItems=[]; ui.coverages={}; ui.payerId=null;
   ui.manualRate=""; ui.forceManual=false; ui.scanError=null; ui.itemScanError=null;
   ui.receiptB64=null; ui.receiptMime=null;
   ui.participants = new Set(state.members.map(m=>m.id));
