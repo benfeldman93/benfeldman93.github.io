@@ -93,8 +93,8 @@
   .my-sub{font-size:12.5px;color:rgba(252,251,247,.6);margin-bottom:12px}
   .my-line{display:flex;align-items:center;gap:10px;background:rgba(252,251,247,.06);
     border:1px solid rgba(252,251,247,.14);border-radius:9px;padding:11px 13px;margin-bottom:8px}
-  .my-line .t{font-size:14px;font-weight:600}
-  .my-line .v{margin-left:auto;font-family:'Space Mono',monospace;font-weight:700;font-size:15px}
+  .my-line .t{font-size:14px;font-weight:600;flex:1;min-width:0}
+  .my-line .v{margin-left:auto;flex:0 0 auto;font-family:'Space Mono',monospace;font-weight:700;font-size:15px;min-width:66px;text-align:right}
   .my-line .v.in{color:#7FD8AC}.my-line .v.out{color:#F0A79E}
 
   /* ── settle stubs ── */
@@ -104,12 +104,12 @@
     background:var(--kraft);border:1px solid var(--line);top:50%;transform:translateY(-50%)}
   .stub::before{left:-8px}.stub::after{right:-8px}
   .stub.mine{border-color:var(--ink);box-shadow:0 0 0 1.5px var(--ink) inset}
-  .stub .who{font-weight:600;font-size:14.5px}
+  .stub .who{font-weight:600;font-size:14.5px;flex:1;min-width:0}
   .stub .who .arrow{color:var(--stamp);font-weight:700;margin:0 6px}
-  .stub .amt{margin-left:auto;font-family:'Space Mono',monospace;font-weight:700;font-size:16px}
-  .mark-paid{flex:0 0 auto;margin-left:14px;border:1px solid var(--green);background:var(--green-soft);
-    color:var(--green);border-radius:8px;padding:8px 12px;font-family:'Bricolage Grotesque',sans-serif;
-    font-weight:700;font-size:12.5px;cursor:pointer;transition:.12s}
+  .stub .amt{flex:0 0 auto;font-family:'Space Mono',monospace;font-weight:700;font-size:16px;min-width:72px;text-align:right}
+  .mark-paid{flex:0 0 auto;margin-left:12px;border:1px solid var(--green);background:var(--green-soft);
+    color:var(--green);border-radius:8px;padding:8px 0;width:96px;text-align:center;white-space:nowrap;
+    font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:12.5px;cursor:pointer;transition:.12s}
   .mark-paid:hover{background:var(--green);color:#fff}
   .settled-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
   .settled-row:last-child{border-bottom:none}
@@ -240,13 +240,17 @@
   .exp{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);
     border-radius:10px;margin-bottom:9px;background:var(--paper)}
   .exp .ic{width:38px;height:38px;border-radius:9px;background:var(--kraft);display:grid;place-items:center;font-size:18px;flex:0 0 auto}
+  .exp .meta{flex:1;min-width:0}
   .exp .meta .d{font-weight:600;font-size:14.5px}
   .exp .meta .s{font-size:12px;color:var(--ink-soft);margin-top:1px}
-  .exp .ea{margin-left:auto;text-align:right}
+  .exp .meta .rcpt{display:inline-block;margin-top:4px;font-size:11.5px;font-weight:600;color:var(--ink-soft);text-decoration:none}
+  .exp .meta .rcpt:hover{color:var(--stamp)}
+  .exp .ea{margin-left:auto;text-align:right;flex:0 0 auto}
   .exp .ea .v{font-family:'Space Mono',monospace;font-weight:700;font-size:15px}
   .exp .ea .o{font-size:11px;color:var(--ink-soft);font-family:'Space Mono',monospace}
-  .exp .ea .del{background:none;border:none;color:var(--ink-soft);font-size:11.5px;cursor:pointer;margin-top:2px}
+  .exp .ea .del{display:block;margin-left:auto;background:none;border:none;color:var(--ink-soft);font-size:11.5px;cursor:pointer;margin-top:2px}
   .exp .ea .del:hover{color:var(--stamp)}
+  .exp.is-deleted{opacity:.72;border-style:dashed}
 
   /* ── misc ── */
   .empty{text-align:center;padding:30px 16px;color:var(--ink-soft)}
@@ -442,6 +446,10 @@
     <div class="card">
       <h2>Expense history</h2>
       <p class="sub">Everything logged, newest first. Dollar value is locked at the day's rate.</p>
+      <div class="seg" id="histSeg" style="margin-bottom:14px">
+        <button type="button" data-hview="active"  aria-pressed="true">Active</button>
+        <button type="button" data-hview="deleted" aria-pressed="false">Recently deleted</button>
+      </div>
       <div id="histList"></div>
     </div>
   </section>
@@ -496,11 +504,12 @@ const AVATAR_COLORS= ["#C8453A","#2E7D5B","#3A5DA8","#B5762B","#7A4B9E","#1F8A8A
 const EXP_ICONS    = ["🍽️","🚆","🏨","🍻","🛒","🎟️","☕","⛽","🚕","🥐"];
 
 /* ══ app state ══ */
-let state  = {tripName:"PayShare", members:[], expenses:[], payments:[], fxCache:{}, customCities:[], todos:[]};
+let state  = {tripName:"PayShare", members:[], expenses:[], deletedExpenses:[], payments:[], fxCache:{}, customCities:[], todos:[]};
 let ui     = {tab:"settle", selectedCity:null, participants:new Set(), splitMode:"even",
               customSplits:{}, currency:"EUR", date:todayISO(), liveRate:null,
               rateLoading:false, manualRate:"", forceManual:false, scanBusy:false, scanError:null,
-              lineItems:[], itemScanBusy:false, itemScanError:null};
+              lineItems:[], itemScanBusy:false, itemScanError:null,
+              receiptB64:null, receiptMime:null, histView:"active"};
 let GROUP_ID = null, GROUP_CODE = null, meId = null;
 let rateReqId = 0, partsInit = false, store = null;
 
@@ -737,7 +746,7 @@ function makeSupabaseStore(groupId) {
       createdAt: new Date(m.created_at).getTime()
     }));
 
-    const expenses = (expRes.data || []).map(e => ({
+    const allExpenses = (expRes.data || []).map(e => ({
       id:           e.id,
       desc:         e.description,
       origAmount:   parseFloat(e.orig_amount),
@@ -750,8 +759,12 @@ function makeSupabaseStore(groupId) {
       splitMode:    e.split_mode,
       customSplits: e.custom_splits,
       city:         e.city,
+      receiptUrl:   e.receipt_url || null,
+      deleted:      !!e.deleted,
       ts:           new Date(e.created_at).getTime()
     }));
+    const expenses        = allExpenses.filter(e => !e.deleted);
+    const deletedExpenses = allExpenses.filter(e =>  e.deleted);
 
     const payments = (payRes.data || []).map(p => ({
       id:     p.id,
@@ -774,7 +787,7 @@ function makeSupabaseStore(groupId) {
     return {
       tripName: grpRes.data?.name || "PayShare",
       customCities: grpRes.data?.custom_cities || [],
-      members, expenses, payments, fxCache, todos
+      members, expenses, deletedExpenses, payments, fxCache, todos
     };
   }
 
@@ -843,14 +856,27 @@ function makeSupabaseStore(groupId) {
         participants: e.participants,
         split_mode:   e.splitMode,
         custom_splits:e.customSplits,
-        city:         e.city
+        city:         e.city,
+        receipt_url:  e.receiptUrl || null
       });
       if (error) { alert("Error saving expense: " + error.message); return; }
       if (sub) sub(await fetchState());
       flashSaved();
     },
 
-    async delExpense(id) {
+    async delExpense(id) {            /* soft delete — recoverable from History */
+      await sb.from("expenses").update({deleted: true}).eq("id", id);
+      if (sub) sub(await fetchState());
+      flashSaved();
+    },
+
+    async restoreExpense(id) {
+      await sb.from("expenses").update({deleted: false}).eq("id", id);
+      if (sub) sub(await fetchState());
+      flashSaved();
+    },
+
+    async purgeExpense(id) {          /* permanent delete */
       await sb.from("expenses").delete().eq("id", id);
       if (sub) sub(await fetchState());
       flashSaved();
@@ -950,48 +976,65 @@ function compressImage(file, maxDim, quality) {
     img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error("img"));}; img.src=url;
   });
 }
+/* shared scan core: one upload returns total + currency + description + line items,
+   and stashes the (compressed) image so it can be saved with the expense. */
+async function callReceiptScan(file) {
+  let b64, media;
+  try { ({b64,media}=await compressImage(file,1280,0.72)); }
+  catch(e) { b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=()=>rej();r.readAsDataURL(file);}); media=file.type||"image/png"; }
+  ui.receiptB64 = b64; ui.receiptMime = media;   /* kept for upload on save */
+  const prompt = 'This image is a receipt, itemized bill, or payment screenshot. Return ONLY JSON (no markdown), shaped: '
+    + '{"unclear":false,"amount":number_or_null,"currency":"USD","description":"2-4 words","items":[{"name":"short name","price":number}]}. '
+    + 'amount = the single grand TOTAL paid (include tax and tip). items = every individual line item with its own price (include tax and tip/gratuity as their own items) — leave [] for a payment screenshot with no itemization. '
+    + 'If the photo is too blurry, cropped, or you are not confident reading it, set "unclear" to true.';
+  const data = await anthropicMessages({model:"claude-sonnet-4-6",max_tokens:1500,messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:media,data:b64}},{type:"text",text:prompt}]}]});
+  const text = (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("").replace(/```json|```/g,"").trim();
+  return JSON.parse(text);
+}
+function applyScan(parsed) {
+  if (parsed.amount != null)                                   $("expAmt").value = parsed.amount;
+  if (parsed.currency && CURRENCIES.includes(parsed.currency)) { ui.currency=$("expCur").value=parsed.currency; $("amtSym").textContent=CUR_SYM[parsed.currency]||""; ui.manualRate=""; ui.forceManual=false; }
+  if (parsed.description)                                      $("expDesc").value = parsed.description;
+  const items = Array.isArray(parsed.items) ? parsed.items : [];
+  ui.lineItems = items.map(it => ({id:uid(), name:String(it.name||"Item"), price:(it.price!=null?String(it.price):""), claimers:new Set()}));
+  if (ui.lineItems.length >= 2) ui.splitMode = "items";        /* itemized receipt → jump to By-item, pre-filled */
+}
 async function scanScreenshot(file) {
   if (!file) return;
   ui.scanBusy = true; ui.scanError = null; showScan();
   try {
-    let b64, media;
-    try { ({b64,media}=await compressImage(file,1280,0.72)); }
-    catch(e) { b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=()=>rej();r.readAsDataURL(file);}); media=file.type||"image/png"; }
-    const prompt = 'This image is a receipt or payment screenshot. Find the single TOTAL amount paid (include tax and tip). Identify the currency. Give a 2-4 word description. Respond ONLY with JSON (no markdown): {"amount":number_or_null,"currency":"USD","description":"short text"}';
-    const data = await anthropicMessages({model:"claude-sonnet-4-6",max_tokens:200,messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:media,data:b64}},{type:"text",text:prompt}]}]});
-    const text = (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("").replace(/```json|```/g,"").trim();
-    const parsed = JSON.parse(text);
-    if (parsed.amount != null)                    $("expAmt").value = parsed.amount;
-    if (parsed.currency && CURRENCIES.includes(parsed.currency)) { ui.currency=$("expCur").value=parsed.currency; $("amtSym").textContent=CUR_SYM[parsed.currency]||""; }
-    if (parsed.description)                       $("expDesc").value = parsed.description;
+    const parsed = await callReceiptScan(file);
+    const nothing = (parsed.amount == null) && !(parsed.items && parsed.items.length);
+    if (parsed.unclear || nothing) { ui.scanBusy=false; ui.scanError="Picture unclear — try a clearer, straight-on photo, or enter it manually below."; showScan(); return; }
+    applyScan(parsed);
     ui.scanBusy=false; ui.scanError=null; showScan();
-    await refreshRate();
-    syncSplits();
+    await refreshRate(); renderAddForm();
   } catch(e) {
-    console.error(e); ui.scanBusy=false; ui.scanError="Couldn't read that one — type the amount in below."; showScan();
+    console.error(e); ui.scanBusy=false; ui.scanError="Couldn't read that one — enter the amount below."; showScan();
   }
 }
 async function scanBillItems(file) {
   if (!file) return;
   ui.itemScanBusy = true; ui.itemScanError = null; renderItemSplit();
   try {
-    let b64, media;
-    try { ({b64,media}=await compressImage(file,1280,0.72)); }
-    catch(e) { b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=()=>rej();r.readAsDataURL(file);}); media=file.type||"image/png"; }
-    const prompt = 'This is an itemized bill or receipt. List every line item with its individual price (NOT the total). Also identify the currency. Respond ONLY with JSON (no markdown): {"currency":"USD","items":[{"name":"short item name","price":number}]}. Include tax and tip/gratuity as their own line items if present.';
-    const data = await anthropicMessages({model:"claude-sonnet-4-6",max_tokens:1500,messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:media,data:b64}},{type:"text",text:prompt}]}]});
-    const text = (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("").replace(/```json|```/g,"").trim();
-    const parsed = JSON.parse(text);
-    if (parsed.currency && CURRENCIES.includes(parsed.currency) && parsed.currency!==ui.currency) {
-      ui.currency=$("expCur").value=parsed.currency; $("amtSym").textContent=CUR_SYM[parsed.currency]||""; ui.manualRate=""; ui.forceManual=false; refreshRate();
-    }
-    const items = Array.isArray(parsed.items) ? parsed.items : [];
-    ui.lineItems = items.map(it => ({id:uid(), name:String(it.name||"Item"), price:(it.price!=null?String(it.price):""), claimers:new Set()}));
-    if (!ui.lineItems.length) ui.itemScanError = "Couldn't find line items — add them manually below.";
-    ui.itemScanBusy=false; renderItemSplit();
+    const parsed = await callReceiptScan(file);
+    if (parsed.unclear || !(parsed.items && parsed.items.length)) { ui.itemScanBusy=false; ui.itemScanError="Picture unclear — try a clearer photo, or add items manually below."; renderItemSplit(); return; }
+    applyScan(parsed);
+    ui.itemScanBusy=false; renderAddForm();
+    await refreshRate();
   } catch(e) {
     console.error(e); ui.itemScanBusy=false; ui.itemScanError="Couldn't read that bill — add items manually below."; renderItemSplit();
   }
+}
+async function uploadReceipt(expenseId) {
+  if (!ui.receiptB64 || !sb) return null;
+  try {
+    const bytes = Uint8Array.from(atob(ui.receiptB64), c => c.charCodeAt(0));
+    const path = `${GROUP_ID}/${expenseId}.jpg`;
+    const { error } = await sb.storage.from("receipts").upload(path, bytes, {contentType: ui.receiptMime||"image/jpeg", upsert:true});
+    if (error) { console.error("receipt upload:", error); return null; }
+    return sb.storage.from("receipts").getPublicUrl(path).data.publicUrl;
+  } catch(e) { console.error(e); return null; }
 }
 function showScan() {
   const z=$("scanZone"),ic=$("scanIcon"),t=$("scanTitle"),s=$("scanSub"),err=$("scanErr");
@@ -1103,19 +1146,37 @@ function renderNet() {
 
 function renderHistory() {
   const el=$("histList");
-  if (state.expenses.length===0) { el.innerHTML=empty("🧾","No expenses logged","Add your first one from the Add tab."); return; }
-  el.innerHTML = [...state.expenses].reverse().map((e,idx) => {
-    const icon=EXP_ICONS[(state.expenses.length-1-idx)%EXP_ICONS.length];
+  $("histSeg").querySelectorAll("[data-hview]").forEach(b => {
+    b.setAttribute("aria-pressed", ui.histView===b.dataset.hview);
+    b.onclick=()=>{ ui.histView=b.dataset.hview; renderHistory(); };
+  });
+  const deletedView = ui.histView==="deleted";
+  const list = deletedView ? (state.deletedExpenses||[]) : state.expenses;
+
+  if (list.length===0) {
+    el.innerHTML = deletedView
+      ? empty("🗑️","Nothing deleted","Removed expenses show up here so you can restore them.")
+      : empty("🧾","No expenses logged","Add your first one from the Add tab.");
+    return;
+  }
+  el.innerHTML = [...list].reverse().map((e,idx) => {
+    const icon=EXP_ICONS[(list.length-1-idx)%EXP_ICONS.length];
     const cityTxt=e.city?`${e.city} · `:"";
     const orig=(e.origCurrency&&e.origCurrency!=="USD")
       ? `<div class="o">${fmtOrig(e.origAmount,e.origCurrency)} · ${dateShort(e.date)}</div>`
       : `<div class="o">${dateShort(e.date||todayISO())}</div>`;
-    return `<div class="exp"><div class="ic">${icon}</div>
+    const receipt = e.receiptUrl ? `<a class="rcpt" href="${e.receiptUrl}" target="_blank" rel="noopener">📷 receipt</a>` : "";
+    const actions = deletedView
+      ? `<button class="del" data-restore="${e.id}" style="color:var(--green)">restore</button><button class="del" data-purge="${e.id}">delete forever</button>`
+      : `<button class="del" data-del="${e.id}">remove</button>`;
+    return `<div class="exp${deletedView?' is-deleted':''}"><div class="ic">${icon}</div>
       <div class="meta"><div class="d">${escHtml(e.desc)||"Expense"}</div>
-      <div class="s">${cityTxt}${escHtml(nameOf(e.payer))} paid · split ${e.participants.length} way${e.participants.length!==1?'s':''}</div></div>
-      <div class="ea"><div class="v">${fmtUSD(e.amountUSD)}</div>${orig}<button class="del" data-del="${e.id}">remove</button></div></div>`;
+      <div class="s">${cityTxt}${escHtml(nameOf(e.payer))} paid · split ${e.participants.length} way${e.participants.length!==1?'s':''}</div>${receipt}</div>
+      <div class="ea"><div class="v">${fmtUSD(e.amountUSD)}</div>${orig}${actions}</div></div>`;
   }).join("");
   el.querySelectorAll("[data-del]").forEach(b => b.onclick=()=>store.delExpense(b.dataset.del));
+  el.querySelectorAll("[data-restore]").forEach(b => b.onclick=()=>store.restoreExpense(b.dataset.restore));
+  el.querySelectorAll("[data-purge]").forEach(b => b.onclick=()=>{ if(confirm("Permanently delete this expense? This cannot be undone.")) store.purgeExpense(b.dataset.purge); });
 }
 
 function renderCrew() {
@@ -1220,19 +1281,23 @@ function syncSplits(){ if(ui.splitMode==="custom")renderCustomSplit(); else if(u
 
 function renderCustomSplit() {
   if (ui.splitMode!=="custom") return;
-  const box=$("customSplit"); const parts=[...ui.participants];
-  const amt=expAmtNum();
+  const box=$("customSplit"); const parts=[...ui.participants]; const sym=CUR_SYM[ui.currency]||"";
+  if (!parts.length) { box.innerHTML=`<p class="sub">Pick who's splitting this first.</p>`; return; }
+  box.innerHTML = parts.map(id=>
+      `<div class="cs-row"><span class="nm">${escHtml(nameOf(id))}</span>
+      <div class="amt-input-wrap"><span class="sym">${sym}</span><input type="text" inputmode="decimal" autocomplete="off" pattern="[0-9]*[.,]?[0-9]*" data-cs="${id}" value="${ui.customSplits[id]??''}" placeholder="0.00"></div></div>`
+    ).join("") + `<div class="cs-remain" id="csRemain"></div>`;
+  updateCsRemain();
+  /* update only the remaining-balance line on input so the field keeps focus */
+  box.querySelectorAll("[data-cs]").forEach(inp => inp.oninput=()=>{ ui.customSplits[inp.dataset.cs]=inp.value; updateCsRemain(); });
+}
+function updateCsRemain() {
+  const el=$("csRemain"); if(!el) return;
+  const parts=[...ui.participants]; const amt=expAmtNum();
   const used=parts.reduce((s,id)=>s+(readNum(ui.customSplits[id])||0),0);
-  const remain=round2(amt-used); const sym=CUR_SYM[ui.currency]||"";
-  box.innerHTML = parts.length
-    ? parts.map(id=>
-        `<div class="cs-row"><span class="nm">${escHtml(nameOf(id))}</span>
-        <div class="amt-input-wrap"><span class="sym">${sym}</span><input type="text" inputmode="decimal" autocomplete="off" pattern="[0-9]*[.,]?[0-9]*" data-cs="${id}" value="${ui.customSplits[id]??''}" placeholder="0.00"></div></div>`
-      ).join("") +
-      `<div class="cs-remain" style="color:${Math.abs(remain)<0.01?'var(--green)':'var(--stamp)'}">
-        ${Math.abs(remain)<0.01?'Balanced ✓':(remain>0?fmtOrig(remain,ui.currency)+' left':fmtOrig(-remain,ui.currency)+' over')}</div>`
-    : `<p class="sub">Pick who's splitting this first.</p>`;
-  box.querySelectorAll("[data-cs]").forEach(inp => inp.oninput=()=>{ui.customSplits[inp.dataset.cs]=inp.value;renderCustomSplit();});
+  const remain=round2(amt-used);
+  el.style.color = Math.abs(remain)<0.01 ? 'var(--green)' : 'var(--stamp)';
+  el.textContent = Math.abs(remain)<0.01 ? 'Balanced ✓' : (remain>0 ? fmtOrig(remain,ui.currency)+' left' : fmtOrig(-remain,ui.currency)+' over');
 }
 
 /* ── item split: scan a bill, claim line items ── */
@@ -1256,15 +1321,28 @@ function renderItemSplit() {
         <button class="irm" data-idel="${it.id}" title="Remove">×</button>
       </div>
       <div class="item-claim">${parts.map(id=>`<button type="button" class="chip" data-iclaim="${it.id}" data-pid="${id}" aria-pressed="${it.claimers.has(id)}">${escHtml(nameOf(id))}</button>`).join("")}</div>
-      ${claimers.length?`<div class="net-tag" style="text-align:left;margin-top:6px">${fmtOrig((readNum(it.price)||0)/claimers.length,ui.currency)} each · ${claimers.length} sharing</div>`:`<div class="net-tag" style="text-align:left;margin-top:6px;color:var(--stamp)">unclaimed — split among everyone</div>`}
+      <div class="net-tag" id="ihint-${it.id}" style="text-align:left;margin-top:6px"></div>
     </div>`;
   }).join("");
 
-  const totLines = parts.map(id=>`<div class="ln"><span>${escHtml(nameOf(id))}</span><span>${fmtOrig(totals.per[id]||0,ui.currency)}</span></div>`).join("");
   box.innerHTML = scanZone + rows +
     `<button type="button" class="item-add" id="itemAddBtn">+ Add an item</button>` +
-    `<div class="item-tot"><div class="ln" style="font-weight:700;border-top:1px solid var(--line);padding-top:6px"><span>Items total</span><span>${fmtOrig(totals.sum,ui.currency)}</span></div>${totLines}</div>`;
+    `<div class="item-tot" id="itemTotBlock"></div>`;
+  updateItemComputed();
   wireItemSplit();
+}
+/* recompute the per-item hints and totals block WITHOUT rebuilding inputs (keeps focus) */
+function updateItemComputed() {
+  const parts=[...ui.participants]; const totals=itemTotals();
+  ui.lineItems.forEach(it=>{
+    const hint=$("ihint-"+it.id); if(!hint) return;
+    const claimers=parts.filter(id=>it.claimers.has(id)); const price=readNum(it.price)||0;
+    if (claimers.length) { hint.style.color=""; hint.textContent=`${fmtOrig(price/claimers.length,ui.currency)} each · ${claimers.length} sharing`; }
+    else { hint.style.color="var(--stamp)"; hint.textContent="unclaimed — split among everyone"; }
+  });
+  const tb=$("itemTotBlock"); if(!tb) return;
+  const totLines = parts.map(id=>`<div class="ln"><span>${escHtml(nameOf(id))}</span><span>${fmtOrig(totals.per[id]||0,ui.currency)}</span></div>`).join("");
+  tb.innerHTML = `<div class="ln" style="font-weight:700;border-top:1px solid var(--line);padding-top:6px"><span>Items total</span><span>${fmtOrig(totals.sum,ui.currency)}</span></div>${totLines}`;
 }
 function itemTotals() {
   const parts=[...ui.participants]; const per={}; parts.forEach(id=>per[id]=0); let sum=0;
@@ -1281,9 +1359,10 @@ function wireItemSplit() {
   const z=$("itemScanZone"); if(z) z.onclick=()=>$("itemScanInput").click();
   const add=$("itemAddBtn"); if(add) add.onclick=()=>{ui.lineItems.push({id:uid(),name:"",price:"",claimers:new Set()});renderItemSplit();};
   $("itemSplit").querySelectorAll("[data-iname]").forEach(inp=>inp.oninput=()=>{const it=ui.lineItems.find(x=>x.id===inp.dataset.iname);if(it)it.name=inp.value;});
-  $("itemSplit").querySelectorAll("[data-iprice]").forEach(inp=>inp.oninput=()=>{const it=ui.lineItems.find(x=>x.id===inp.dataset.iprice);if(it){it.price=inp.value;clearTimeout(inp._t);inp._t=setTimeout(renderItemSplit,400);}});
+  /* price typing only recomputes totals/hints — no rebuild, so the field keeps focus */
+  $("itemSplit").querySelectorAll("[data-iprice]").forEach(inp=>inp.oninput=()=>{const it=ui.lineItems.find(x=>x.id===inp.dataset.iprice);if(it){it.price=inp.value;updateItemComputed();}});
   $("itemSplit").querySelectorAll("[data-idel]").forEach(b=>b.onclick=()=>{ui.lineItems=ui.lineItems.filter(x=>x.id!==b.dataset.idel);renderItemSplit();});
-  $("itemSplit").querySelectorAll("[data-iclaim]").forEach(b=>b.onclick=()=>{const it=ui.lineItems.find(x=>x.id===b.dataset.iclaim);if(it){const pid=b.dataset.pid;it.claimers.has(pid)?it.claimers.delete(pid):it.claimers.add(pid);renderItemSplit();}});
+  $("itemSplit").querySelectorAll("[data-iclaim]").forEach(b=>b.onclick=()=>{const it=ui.lineItems.find(x=>x.id===b.dataset.iclaim);if(it){const pid=b.dataset.pid;it.claimers.has(pid)?it.claimers.delete(pid):it.claimers.add(pid);b.setAttribute("aria-pressed",it.claimers.has(pid));updateItemComputed();}});
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1338,14 +1417,17 @@ async function addExpense() {
   }
 
   $("addBtn").disabled = true;
-  await store.addExpense(uid(), {
+  const expId = uid();
+  const receiptUrl = await uploadReceipt(expId);   /* saves the scanned photo, if any */
+  await store.addExpense(expId, {
     desc, origAmount, origCurrency:ui.currency, rate, amountUSD,
-    date:ui.date, payer, participants, splitMode, customSplits, city:ui.selectedCity, ts:Date.now()
+    date:ui.date, payer, participants, splitMode, customSplits, city:ui.selectedCity, receiptUrl, ts:Date.now()
   });
   $("addBtn").disabled = false;
   $("expDesc").value=""; $("expAmt").value="";
   ui.selectedCity=null; ui.splitMode="even"; ui.customSplits={}; ui.lineItems=[];
   ui.manualRate=""; ui.forceManual=false; ui.scanError=null; ui.itemScanError=null;
+  ui.receiptB64=null; ui.receiptMime=null;
   ui.participants = new Set(state.members.map(m=>m.id));
   showScan(); switchTab("settle");
 }
