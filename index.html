@@ -281,6 +281,30 @@
   .exp .ea .del.go:hover{background:var(--green);color:#fff}
   .exp.is-deleted{opacity:.72;border-style:dashed}
 
+  /* ── profile ── */
+  .member-li{cursor:pointer;transition:.12s;border-radius:10px;padding:9px;margin:-2px -9px}
+  .member-li:hover{background:var(--kraft)}
+  .member-li .nm-col{flex:1;min-width:0}
+  .member-li .nm-sub{font-size:11.5px;color:var(--ink-soft);margin-top:1px}
+  .member-li .arr{color:var(--ink-soft);font-size:18px;margin-left:auto}
+  .avatar-img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+  .profile-avatar{width:72px;height:72px;font-size:26px;margin:0 auto 10px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+  .pay-btn{display:flex;align-items:center;gap:10px;width:100%;padding:11px 14px;
+    border:1px solid var(--line);border-radius:10px;background:var(--paper);cursor:pointer;
+    font-family:'Public Sans',sans-serif;font-size:14px;font-weight:600;color:var(--ink);
+    text-decoration:none;margin-bottom:8px;transition:.12s}
+  .pay-btn:hover{border-color:var(--ink);background:var(--kraft)}
+  .pay-btn .pay-icon{font-size:18px;width:24px;text-align:center;flex-shrink:0}
+  .pay-btn .pay-label{font-size:11px;color:var(--ink-soft);font-weight:400;margin-left:auto}
+  .contact-row{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:14px;
+    border-bottom:1px solid var(--line)}
+  .contact-row:last-child{border-bottom:none}
+  .contact-row .ci{width:28px;text-align:center;flex-shrink:0;font-size:16px}
+  .avatar-upload-wrap{text-align:center;margin-bottom:16px}
+  .avatar-upload-wrap .av-preview{width:72px;height:72px;font-size:26px;margin:0 auto 8px;
+    border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .avatar-upload-wrap button{font-size:12px;color:var(--green);background:none;border:none;cursor:pointer;font-weight:600}
   /* ── misc ── */
   .empty{text-align:center;padding:30px 16px;color:var(--ink-soft)}
   .empty .big{font-size:32px;margin-bottom:8px}
@@ -403,6 +427,50 @@
       <p>Scanning is built in — just tap a scan zone on the Add tab. No key needed; requests go through a secure server function.</p>
     </div>
     <button class="btn ghost" id="switchGroup" style="margin-top:6px">Switch group</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ PROFILE VIEW ═══════════════════ -->
+<div class="overlay hidden" id="profileModal">
+  <div class="sheet">
+    <button class="closex" id="profileClose">×</button>
+    <div style="text-align:center;margin-bottom:18px">
+      <div id="profileAvatarWrap" class="profile-avatar"></div>
+      <div id="profileName" style="font-size:22px;font-weight:800;font-family:'Bricolage Grotesque',sans-serif;margin-bottom:2px"></div>
+      <div id="profileUsername" style="font-size:12.5px;color:var(--ink-soft)"></div>
+    </div>
+    <div id="profilePayments"></div>
+    <div id="profileContact"></div>
+    <div id="profileEditTrigger" class="hidden" style="margin-top:16px">
+      <button class="btn ghost" id="openProfileEditBtn" style="width:100%">Edit my profile</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ PROFILE EDIT ═══════════════════ -->
+<div class="overlay hidden" id="profileEditModal">
+  <div class="sheet">
+    <button class="closex" id="profileEditClose">×</button>
+    <h2>Edit your profile</h2>
+    <div class="avatar-upload-wrap">
+      <div id="editAvatarPreview" class="av-preview"></div>
+      <button type="button" id="changeAvatarBtn">Change photo</button>
+      <input type="file" id="avatarInput" accept="image/*" class="hidden">
+    </div>
+    <label class="fl" for="editNickname">Display name</label>
+    <input type="text" id="editNickname" placeholder="e.g. Ben">
+    <label class="fl" for="editVenmo" style="margin-top:10px">Venmo handle</label>
+    <input type="text" id="editVenmo" placeholder="e.g. Ben-Feldman" autocapitalize="none" spellcheck="false">
+    <label class="fl" for="editCashapp" style="margin-top:10px">Cash App handle</label>
+    <input type="text" id="editCashapp" placeholder="e.g. $benfeldman" autocapitalize="none" spellcheck="false">
+    <label class="fl" for="editZelle" style="margin-top:10px">Zelle (phone or email)</label>
+    <input type="text" id="editZelle" placeholder="e.g. +1 212 555 1234" autocapitalize="none">
+    <label class="fl" for="editPhone" style="margin-top:10px">Phone</label>
+    <input type="tel" id="editPhone" placeholder="e.g. +1 212 555 1234">
+    <label class="fl" for="editDispEmail" style="margin-top:10px">Email</label>
+    <input type="email" id="editDispEmail" placeholder="e.g. ben@email.com" autocapitalize="none">
+    <div class="auth-err" id="profileSaveErr"></div>
+    <button class="btn" id="saveProfileBtn" style="margin-top:14px">Save profile</button>
   </div>
 </div>
 
@@ -837,16 +905,26 @@ function makeSupabaseStore(groupId) {
     const ids = memberRows.map(m => m.user_id);
     let nameById = {};
     if (ids.length) {
-      const profRes = await sb.from("profiles").select("id, username, nickname").in("id", ids);
+      const profRes = await sb.from("profiles").select("id, username, nickname, venmo, cashapp, zelle, phone, display_email, avatar_url").in("id", ids);
       if (profRes.error) console.error("profiles query:", profRes.error);
-      (profRes.data || []).forEach(p => { nameById[p.id] = p.nickname || p.username; });
+      (profRes.data || []).forEach(p => { nameById[p.id] = p; });
     }
 
-    const members = memberRows.map(m => ({
-      id:        m.user_id,
-      name:      nameById[m.user_id] || "Unknown",
-      createdAt: new Date(m.created_at).getTime()
-    }));
+    const members = memberRows.map(m => {
+      const p = nameById[m.user_id] || {};
+      return {
+        id:           m.user_id,
+        name:         p.nickname || p.username || "Unknown",
+        username:     p.username || "",
+        venmo:        p.venmo || null,
+        cashapp:      p.cashapp || null,
+        zelle:        p.zelle || null,
+        phone:        p.phone || null,
+        displayEmail: p.display_email || null,
+        avatarUrl:    p.avatar_url || null,
+        createdAt:    new Date(m.created_at).getTime()
+      };
+    });
 
     const allExpenses = (expRes.data || []).map(e => ({
       id:           e.id,
@@ -1020,6 +1098,13 @@ function makeSupabaseStore(groupId) {
       await sb.from("payments").delete().eq("id", id);
       if (sub) sub(await fetchState());
       flashSaved();
+    },
+
+    async updateProfile(data) {
+      const {error} = await sb.from("profiles").update(data).eq("id", meId);
+      if (error) { alert("Could not save profile: " + error.message); return false; }
+      if (sub) sub(await fetchState());
+      return true;
     },
 
     async cacheRate(key, rate) {
@@ -1309,16 +1394,32 @@ function renderHistory() {
   el.querySelectorAll("[data-edit]").forEach(b => b.onclick=()=>{ const e=state.expenses.find(x=>x.id===b.dataset.edit); if(e) openEditExpense(e); });
 }
 
+function avatarEl(m, size=36) {
+  const bg = colorFor(m.id);
+  if (m.avatarUrl) return `<span class="avatar" style="background:${bg};width:${size}px;height:${size}px;padding:0;overflow:hidden"><img class="avatar-img" src="${escHtml(m.avatarUrl)}" alt="${escHtml(m.name)}"></span>`;
+  return `<span class="avatar" style="background:${bg};width:${size}px;height:${size}px;font-size:${Math.round(size*.38)}px">${initials(m.name)}</span>`;
+}
+
 function renderCrew() {
   const el=$("memberList");
   $("inviteLinkInput").value = shareLink();
   el.innerHTML = state.members.length
-    ? state.members.map(m =>
-        `<div class="member-li">
-          <span class="avatar" style="background:${colorFor(m.id)}">${initials(m.name)}</span>
-          <span class="nm">${escHtml(m.name)}${m.id===meId?'<span class="you-tag" style="margin-left:6px">you</span>':''}</span>
-        </div>`).join("")
+    ? state.members.map(m => {
+        const hasPayment = m.venmo || m.cashapp || m.zelle;
+        const sub = m.id===meId ? "your profile" : (hasPayment ? "tap to pay" : "tap to view");
+        return `<div class="member-li" data-profile="${m.id}">
+          ${avatarEl(m,38)}
+          <div class="nm-col">
+            <div class="nm">${escHtml(m.name)}${m.id===meId?'<span class="you-tag" style="margin-left:6px">you</span>':''}</div>
+            <div class="nm-sub">${sub}</div>
+          </div>
+          <span class="arr">›</span>
+        </div>`;
+      }).join("")
     : `<p class="sub" style="margin:6px 0 0">No one here yet.</p>`;
+  el.querySelectorAll("[data-profile]").forEach(row =>
+    row.onclick = () => openProfile(row.dataset.profile)
+  );
 }
 
 function renderTodos() {
@@ -1566,6 +1667,103 @@ function initCityPicker() {
   };
 }
 
+/* ── profile view / edit ── */
+function openProfile(memberId) {
+  const m = state.members.find(x => x.id === memberId);
+  if (!m) return;
+
+  /* avatar */
+  const wrap = $("profileAvatarWrap");
+  wrap.style.background = colorFor(m.id);
+  wrap.innerHTML = m.avatarUrl
+    ? `<img class="avatar-img" src="${escHtml(m.avatarUrl)}" alt="${escHtml(m.name)}">`
+    : `<span style="color:#fff;font-weight:800">${initials(m.name)}</span>`;
+
+  $("profileName").textContent     = m.name;
+  $("profileUsername").textContent = m.username ? "@" + m.username : "";
+
+  /* payment buttons */
+  const pp = $("profilePayments");
+  const payRows = [];
+  if (m.venmo)   payRows.push(`<a class="pay-btn" href="https://venmo.com/u/${encodeURIComponent(m.venmo.replace(/^@/,''))}" target="_blank" rel="noopener"><span class="pay-icon">💸</span><span>Venmo</span><span class="pay-label">@${escHtml(m.venmo.replace(/^@/,''))}</span></a>`);
+  if (m.cashapp) payRows.push(`<a class="pay-btn" href="https://cash.app/${encodeURIComponent(m.cashapp.startsWith('$')?m.cashapp:'$'+m.cashapp)}" target="_blank" rel="noopener"><span class="pay-icon">💵</span><span>Cash App</span><span class="pay-label">${escHtml(m.cashapp.startsWith('$')?m.cashapp:'$'+m.cashapp)}</span></a>`);
+  if (m.zelle)   payRows.push(`<div class="pay-btn" style="cursor:default"><span class="pay-icon">🏦</span><span>Zelle</span><span class="pay-label">${escHtml(m.zelle)}</span></div>`);
+  pp.innerHTML = payRows.length ? `<p class="sub" style="margin-bottom:8px;font-weight:600">Pay</p>${payRows.join("")}` : "";
+
+  /* contact */
+  const pc = $("profileContact");
+  const cRows = [];
+  if (m.phone)        cRows.push(`<div class="contact-row"><span class="ci">📞</span><span>${escHtml(m.phone)}</span></div>`);
+  if (m.displayEmail) cRows.push(`<div class="contact-row"><span class="ci">✉️</span><span>${escHtml(m.displayEmail)}</span></div>`);
+  pc.innerHTML = cRows.length ? `<p class="sub" style="margin:14px 0 8px;font-weight:600">Contact</p><div style="border:1px solid var(--line);border-radius:10px;padding:0 12px">${cRows.join("")}</div>` : "";
+
+  /* show edit button only for own profile */
+  $("profileEditTrigger").classList.toggle("hidden", m.id !== meId);
+
+  $("profileModal").classList.remove("hidden");
+}
+
+let pendingAvatarFile = null;
+
+function openProfileEdit() {
+  $("profileModal").classList.add("hidden");
+  const me = state.members.find(x => x.id === meId) || {};
+  pendingAvatarFile = null;
+
+  /* avatar preview */
+  const prev = $("editAvatarPreview");
+  prev.style.background = colorFor(meId);
+  prev.innerHTML = me.avatarUrl
+    ? `<img class="avatar-img" src="${escHtml(me.avatarUrl)}" alt="">`
+    : `<span style="color:#fff;font-weight:800;font-size:26px">${initials(me.name)}</span>`;
+
+  $("editNickname").value   = me.name || "";
+  $("editVenmo").value      = me.venmo || "";
+  $("editCashapp").value    = me.cashapp || "";
+  $("editZelle").value      = me.zelle || "";
+  $("editPhone").value      = me.phone || "";
+  $("editDispEmail").value  = me.displayEmail || "";
+  $("profileSaveErr").textContent = "";
+  $("profileEditModal").classList.remove("hidden");
+}
+
+async function uploadAvatar(file) {
+  const ext  = file.name.split(".").pop() || "jpg";
+  const path = `${meId}/avatar.${ext}`;
+  const {error} = await sb.storage.from("avatars").upload(path, file, {upsert: true, contentType: file.type});
+  if (error) { alert("Could not upload photo: " + error.message); return null; }
+  const {data} = sb.storage.from("avatars").getPublicUrl(path);
+  return data.publicUrl + "?t=" + Date.now();   /* cache-bust */
+}
+
+async function saveProfile() {
+  const btn = $("saveProfileBtn");
+  btn.disabled = true; btn.textContent = "Saving…";
+  $("profileSaveErr").textContent = "";
+
+  let avatarUrl = (state.members.find(x=>x.id===meId)||{}).avatarUrl || null;
+  if (pendingAvatarFile) {
+    const url = await uploadAvatar(pendingAvatarFile);
+    if (url) avatarUrl = url;
+  }
+
+  const nick = $("editNickname").value.trim();
+  const ok = await store.updateProfile({
+    nickname:      nick || null,
+    venmo:         $("editVenmo").value.trim() || null,
+    cashapp:       $("editCashapp").value.trim() || null,
+    zelle:         $("editZelle").value.trim() || null,
+    phone:         $("editPhone").value.trim() || null,
+    display_email: $("editDispEmail").value.trim() || null,
+    avatar_url:    avatarUrl
+  });
+
+  btn.disabled = false; btn.textContent = "Save profile";
+  if (!ok) return;
+  if (nick) { $("welcomeName").textContent = nick; $("loggedUserLabel").textContent = nick; }
+  $("profileEditModal").classList.add("hidden");
+}
+
 function openEditExpense(e) {
   editingExpenseId = e.id;
   $("expDesc").value    = e.desc || "";
@@ -1694,6 +1892,28 @@ $("copyShare2").onclick= copyShare;
 $("copyInviteBtn").onclick = copyShare;
 $("switchGroup").onclick= () => { if(store) store.cleanup(); GROUP_ID=null; GROUP_CODE=null; location.hash=""; showGroupScreen(); };
 $("logoutBtn").onclick = logout;
+
+/* profile modals */
+$("profileClose").onclick      = () => $("profileModal").classList.add("hidden");
+$("profileEditClose").onclick  = () => $("profileEditModal").classList.add("hidden");
+$("openProfileEditBtn").onclick= openProfileEdit;
+$("saveProfileBtn").onclick    = saveProfile;
+
+$("changeAvatarBtn").onclick   = () => $("avatarInput").click();
+$("avatarInput").onchange      = e => {
+  const file = e.target.files[0]; if (!file) return;
+  pendingAvatarFile = file;
+  const prev = $("editAvatarPreview");
+  prev.style.background = colorFor(meId);
+  const reader = new FileReader();
+  reader.onload = ev => { prev.innerHTML = `<img class="avatar-img" src="${ev.target.result}" alt="">`; };
+  reader.readAsDataURL(file);
+  e.target.value = "";
+};
+
+/* close profile modals when clicking backdrop */
+$("profileModal").onclick      = e => { if (e.target === $("profileModal"))     $("profileModal").classList.add("hidden"); };
+$("profileEditModal").onclick  = e => { if (e.target === $("profileEditModal")) $("profileEditModal").classList.add("hidden"); };
 
 /* ══════════════════════════════════════════════════════════════
    BOOT
