@@ -265,6 +265,10 @@
   .exp .meta .s{font-size:12px;color:var(--ink-soft);margin-top:1px}
   .exp .meta .rcpt{display:inline-block;margin-top:4px;font-size:11.5px;font-weight:600;color:var(--ink-soft);text-decoration:none}
   .exp .meta .rcpt:hover{color:var(--stamp)}
+  .exp .meta .edit-entry{display:inline-block;margin-top:4px;margin-left:8px;font-size:11.5px;
+    font-weight:600;color:var(--ink-soft);background:none;border:none;cursor:pointer;
+    font-family:'Public Sans',sans-serif;padding:0;text-decoration:none}
+  .exp .meta .edit-entry:hover{color:var(--green)}
   .exp .ea{margin-left:auto;text-align:right;flex:0 0 auto}
   .exp .ea .v{font-family:'Space Mono',monospace;font-weight:700;font-size:15px}
   .exp .ea .o{font-size:11px;color:var(--ink-soft);font-family:'Space Mono',monospace}
@@ -459,8 +463,12 @@
 
   <section id="panel-add" class="hidden">
     <div class="card">
-      <h2>Add an expense</h2>
-      <p class="sub">Scan a screenshot, or just type it in. Anything not in dollars converts at that day's rate.</p>
+      <h2 id="addPanelTitle">Add an expense</h2>
+      <p class="sub" id="addPanelSub">Scan a screenshot, or just type it in. Anything not in dollars converts at that day's rate.</p>
+      <div id="editBanner" class="hidden" style="background:var(--green-soft);border:1px solid #BFE0CE;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <span style="flex:1;font-size:13.5px;font-weight:600;color:var(--green)">✏ Editing entry</span>
+        <button type="button" id="cancelEditBtn" style="border:none;background:none;font-size:12.5px;font-weight:600;color:var(--ink-soft);cursor:pointer;font-family:'Public Sans',sans-serif">Cancel</button>
+      </div>
       <div class="scan-zone" id="scanZone">
         <div class="si" id="scanIcon">📸</div>
         <div class="st" id="scanTitle">Scan a receipt or payment screenshot</div>
@@ -582,7 +590,7 @@ let ui     = {tab:"settle", selectedCity:null, participants:new Set(), splitMode
               rateLoading:false, manualRate:"", forceManual:false, scanBusy:false, scanError:null,
               lineItems:[], itemScanBusy:false, itemScanError:null,
               receiptB64:null, receiptMime:null, histView:"active"};
-let GROUP_ID = null, GROUP_CODE = null, meId = null;
+let GROUP_ID = null, GROUP_CODE = null, meId = null, editingExpenseId = null;
 let rateReqId = 0, partsInit = false, store = null;
 
 const $ = id => document.getElementById(id);
@@ -937,6 +945,26 @@ function makeSupabaseStore(groupId) {
       flashSaved();
     },
 
+    async updateExpense(id, e) {
+      const {error} = await sb.from("expenses").update({
+        payer_id:     e.payer,
+        description:  e.desc,
+        orig_amount:  e.origAmount,
+        orig_currency:e.origCurrency,
+        exchange_rate:e.rate,
+        amount_usd:   e.amountUSD,
+        expense_date: e.date,
+        participants: e.participants,
+        split_mode:   e.splitMode,
+        custom_splits:e.customSplits,
+        city:         e.city,
+        receipt_url:  e.receiptUrl || null
+      }).eq("id", id);
+      if (error) { alert("Error saving changes: " + error.message); return; }
+      if (sub) sub(await fetchState());
+      flashSaved();
+    },
+
     async addExpense(id, e) {
       const {error} = await sb.from("expenses").insert({
         id, group_id: groupId,
@@ -1266,17 +1294,19 @@ function renderHistory() {
       ? `<div class="o">${fmtOrig(e.origAmount,e.origCurrency)} · ${dateShort(e.date)}</div>`
       : `<div class="o">${dateShort(e.date||todayISO())}</div>`;
     const receipt = e.receiptUrl ? `<a class="rcpt" href="${e.receiptUrl}" target="_blank" rel="noopener">📷 receipt</a>` : "";
+    const editBtn = deletedView ? "" : `<button class="edit-entry" data-edit="${e.id}">✏ Edit</button>`;
     const actions = deletedView
       ? `<button class="del go" data-restore="${e.id}">Restore</button><button class="del danger" data-purge="${e.id}">Delete</button>`
       : `<button class="del danger" data-del="${e.id}">Remove</button>`;
     return `<div class="exp${deletedView?' is-deleted':''}"><div class="ic">${icon}</div>
       <div class="meta"><div class="d">${escHtml(e.desc)||"Expense"}</div>
-      <div class="s">${cityTxt}${escHtml(nameOf(e.payer))} paid · split ${e.participants.length} way${e.participants.length!==1?'s':''}</div>${receipt}</div>
+      <div class="s">${cityTxt}${escHtml(nameOf(e.payer))} paid · split ${e.participants.length} way${e.participants.length!==1?'s':''}</div>${receipt}${editBtn}</div>
       <div class="ea"><div class="v">${fmtUSD(e.amountUSD)}</div>${orig}${actions}</div></div>`;
   }).join("");
   el.querySelectorAll("[data-del]").forEach(b => b.onclick=()=>store.delExpense(b.dataset.del));
   el.querySelectorAll("[data-restore]").forEach(b => b.onclick=()=>store.restoreExpense(b.dataset.restore));
   el.querySelectorAll("[data-purge]").forEach(b => b.onclick=()=>{ if(confirm("Permanently delete this expense? This cannot be undone.")) store.purgeExpense(b.dataset.purge); });
+  el.querySelectorAll("[data-edit]").forEach(b => b.onclick=()=>{ const e=state.expenses.find(x=>x.id===b.dataset.edit); if(e) openEditExpense(e); });
 }
 
 function renderCrew() {
@@ -1339,6 +1369,11 @@ function renderAddForm() {
   $("itemSplit").classList.toggle("hidden", ui.splitMode!=="items");
   renderCustomSplit(); renderItemSplit();
   $("addBtn").disabled = state.members.length < 2;
+  const editing = !!editingExpenseId;
+  $("editBanner").classList.toggle("hidden", !editing);
+  $("addPanelTitle").textContent = editing ? "Edit expense" : "Add an expense";
+  $("addPanelSub").classList.toggle("hidden", editing);
+  $("addBtn").textContent = editing ? "Save changes" : "Add to ledger";
 }
 
 function renderRateLine() {
@@ -1531,6 +1566,45 @@ function initCityPicker() {
   };
 }
 
+function openEditExpense(e) {
+  editingExpenseId = e.id;
+  $("expDesc").value    = e.desc || "";
+  $("expAmt").value     = e.origAmount || "";
+  ui.currency           = e.origCurrency || "EUR";
+  const curSel          = $("expCur"); if (curSel) curSel.value = ui.currency;
+  $("amtSym").textContent = CUR_SYM[ui.currency] || "";
+  ui.date               = e.date || todayISO();
+  const dateInp         = $("expDate"); if (dateInp) dateInp.value = ui.date;
+  const payerSel        = $("expPayer"); if (payerSel) payerSel.value = e.payer;
+  ui.selectedCity       = e.city || null;
+  if (cityPicker) cityPicker.sync();
+  ui.participants       = new Set(e.participants || state.members.map(m=>m.id));
+  /* restore custom splits back to original-currency amounts */
+  if (e.splitMode === "custom" && e.customSplits && e.rate) {
+    ui.splitMode = "custom";
+    ui.customSplits = {};
+    Object.keys(e.customSplits).forEach(id => { ui.customSplits[id] = String(round2((e.customSplits[id]||0) / e.rate)); });
+  } else {
+    ui.splitMode    = e.splitMode === "custom" ? "even" : (e.splitMode || "even");
+    ui.customSplits = {};
+  }
+  ui.lineItems=[]; ui.manualRate=""; ui.forceManual=false;
+  ui.scanError=null; ui.itemScanError=null; ui.receiptB64=null; ui.receiptMime=null;
+  switchTab("add");
+  renderAddForm();
+}
+
+function cancelEdit() {
+  editingExpenseId = null;
+  $("expDesc").value=""; $("expAmt").value="";
+  if (cityPicker) cityPicker.clear(); else ui.selectedCity=null;
+  ui.splitMode="even"; ui.customSplits={}; ui.lineItems=[];
+  ui.manualRate=""; ui.forceManual=false;
+  ui.participants = new Set(state.members.map(m=>m.id));
+  renderAddForm();
+  switchTab("history");
+}
+
 async function addExpense() {
   const desc        = $("expDesc").value.trim();
   const payer       = $("expPayer").value;
@@ -1561,12 +1635,22 @@ async function addExpense() {
   }
 
   $("addBtn").disabled = true;
-  const expId = uid();
-  const receiptUrl = await uploadReceipt(expId);   /* saves the scanned photo, if any */
-  await store.addExpense(expId, {
-    desc, origAmount, origCurrency:ui.currency, rate, amountUSD,
-    date:ui.date, payer, participants, splitMode, customSplits, city:ui.selectedCity, receiptUrl, ts:Date.now()
-  });
+  if (editingExpenseId) {
+    const existing = [...state.expenses, ...(state.deletedExpenses||[])].find(x=>x.id===editingExpenseId);
+    await store.updateExpense(editingExpenseId, {
+      desc, origAmount, origCurrency:ui.currency, rate, amountUSD,
+      date:ui.date, payer, participants, splitMode, customSplits,
+      city:ui.selectedCity, receiptUrl: existing?.receiptUrl||null
+    });
+    editingExpenseId = null;
+  } else {
+    const expId = uid();
+    const receiptUrl = await uploadReceipt(expId);
+    await store.addExpense(expId, {
+      desc, origAmount, origCurrency:ui.currency, rate, amountUSD,
+      date:ui.date, payer, participants, splitMode, customSplits, city:ui.selectedCity, receiptUrl, ts:Date.now()
+    });
+  }
   $("addBtn").disabled = false;
   $("expDesc").value=""; $("expAmt").value="";
   if (cityPicker) cityPicker.clear(); else ui.selectedCity=null;
@@ -1591,6 +1675,7 @@ function copyShare() { navigator.clipboard?.writeText(shareLink()); flashSaved()
    ══════════════════════════════════════════════════════════════ */
 document.querySelectorAll(".tab").forEach(b => b.onclick=()=>switchTab(b.dataset.tab));
 $("addBtn").onclick    = addExpense;
+$("cancelEditBtn").onclick = cancelEdit;
 $("expAmt").oninput    = () => { renderRateLine(); syncSplits(); };
 $("expCur").onchange   = e => { ui.currency=e.target.value; $("amtSym").textContent=CUR_SYM[ui.currency]||""; ui.manualRate=""; ui.forceManual=false; refreshRate(); syncSplits(); };
 $("expDate").onchange  = e => { ui.date=e.target.value||todayISO(); ui.manualRate=""; ui.forceManual=false; refreshRate(); };
