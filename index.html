@@ -461,7 +461,31 @@
       <div class="h">Receipt scanning</div>
       <p>Scanning is built in — just tap a scan zone on the Add tab. No key needed; requests go through a secure server function.</p>
     </div>
-    <button class="btn ghost" id="switchGroup" style="margin-top:6px">Switch group</button>
+    <div class="modecard" style="margin-top:14px">
+      <div class="h">Trip settings</div>
+      <label class="fl" style="margin-top:10px">Trip name</label>
+      <input type="text" id="setTripName" placeholder="e.g. Prague 2026">
+      <div class="row2" style="margin-top:10px">
+        <div><label class="fl">Start date</label><input type="date" id="setTripStart"></div>
+        <div><label class="fl">End date</label><input type="date" id="setTripEnd"></div>
+      </div>
+      <label class="fl" style="margin-top:10px">Default currency</label>
+      <select id="setBaseCurrency" style="width:100%"></select>
+      <button class="btn dark" id="saveTripSettings" style="margin-top:12px">Save settings</button>
+    </div>
+    <button class="btn ghost" id="switchGroup" style="margin-top:12px;width:100%">⇄ Switch group</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ SETTLE-UP MODAL ═══════════════════ -->
+<div class="overlay hidden" id="settleUpModal">
+  <div class="sheet">
+    <button class="closex" id="settleUpClose">×</button>
+    <h2 id="settleUpTitle" style="margin-bottom:4px">Settle up</h2>
+    <p id="settleUpSub" class="sub" style="margin-bottom:18px"></p>
+    <div id="settleUpPayLinks" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px"></div>
+    <button class="btn" id="settleUpConfirm" style="width:100%">✓ Mark as paid</button>
+    <button class="btn ghost" id="settleUpSkip" style="width:100%;margin-top:8px">Skip payment links — just mark paid</button>
   </div>
 </div>
 
@@ -518,7 +542,8 @@
         background:rgba(252,251,247,.14);border:1px solid rgba(252,251,247,.2);border-radius:6px;
         padding:2px 7px;letter-spacing:.06em;"></span>
       <span id="loggedUserLabel" style="font-size:10px;opacity:.65"></span>
-      <button class="gear" id="gearBtn" aria-label="Settings" style="margin-left:auto">⚙</button>
+      <button id="headerSwitchBtn" style="margin-left:auto;background:rgba(252,251,247,.14);border:1px solid rgba(252,251,247,.22);border-radius:7px;color:rgba(252,251,247,.85);font-size:11px;font-weight:600;padding:3px 9px;cursor:pointer;font-family:inherit">⇄ Groups</button>
+      <button class="gear" id="gearBtn" aria-label="Settings">⚙</button>
       <button class="logout-btn" id="logoutBtn">Log out</button>
     </div>
     <div class="trip-name" id="tripName" contenteditable="true" spellcheck="false">SplitStack</div>
@@ -728,7 +753,7 @@ const CATEGORIES   = [
 ];
 
 /* ══ app state ══ */
-let state  = {tripName:"SplitStack", members:[], expenses:[], deletedExpenses:[], payments:[], fxCache:{}, customCities:[], todos:[]};
+let state  = {tripName:"SplitStack", tripStart:"", tripEnd:"", baseCurrency:"EUR", members:[], expenses:[], deletedExpenses:[], payments:[], fxCache:{}, customCities:[], todos:[]};
 let ui     = {tab:"settle", selectedCity:null, participants:new Set(), splitMode:"even",
               customSplits:{}, currency:"EUR", date:todayISO(), liveRate:null,
               rateLoading:false, manualRate:"", forceManual:false, scanBusy:false, scanError:null,
@@ -1045,7 +1070,10 @@ function makeSupabaseStore(groupId) {
     }));
 
     return {
-      tripName: grpRes.data?.name || "SplitStack",
+      tripName:     grpRes.data?.name || "SplitStack",
+      tripStart:    grpRes.data?.trip_start || "",
+      tripEnd:      grpRes.data?.trip_end   || "",
+      baseCurrency: grpRes.data?.base_currency || "EUR",
       customCities: grpRes.data?.custom_cities || [],
       members, expenses, deletedExpenses, payments, fxCache, todos
     };
@@ -1075,6 +1103,17 @@ function makeSupabaseStore(groupId) {
 
     async setTripName(v) {
       await sb.from("groups").update({name: v}).eq("id", groupId);
+      if (sub) sub(await fetchState());
+      flashSaved();
+    },
+
+    async setTripSettings({name, tripStart, tripEnd, baseCurrency}) {
+      await sb.from("groups").update({
+        name,
+        trip_start:    tripStart || null,
+        trip_end:      tripEnd   || null,
+        base_currency: baseCurrency || "EUR"
+      }).eq("id", groupId);
       if (sub) sub(await fetchState());
       flashSaved();
     },
@@ -1934,9 +1973,27 @@ function wireItemSplit() {
 /* ══════════════════════════════════════════════════════════════
    ACTIONS
    ══════════════════════════════════════════════════════════════ */
-async function markPaid(from, to, amt) {
-  if (!confirm(`Mark ${nameOf(from)}'s ${fmtUSD(amt)} payment to ${nameOf(to)} as paid?`)) return;
-  await store.addPayment(uid(), {from, to, amount: round2(amt), ts: Date.now()});
+function markPaid(from, to, amt) {
+  const payee = state.members.find(m => m.id === to) || {};
+  $("settleUpTitle").textContent = `${nameOf(from)} pays ${nameOf(to)}`;
+  $("settleUpSub").textContent   = `${fmtUSD(amt)} — use a payment link below, then mark as paid.`;
+
+  const links = [];
+  if (payee.venmo)   links.push({label:"Pay on Venmo",   color:"#3d95ce", href:`https://venmo.com/${payee.venmo.replace(/^@/,"")}?txn=pay&amount=${amt}&note=SplitStack`});
+  if (payee.cashapp) links.push({label:"Pay on Cash App", color:"#00c244", href:`https://cash.app/$${payee.cashapp.replace(/^\$/,"")}`});
+  if (payee.zelle)   links.push({label:"Pay via Zelle",   color:"#6d1ed4", href:`https://enroll.zellepay.com/`});
+
+  $("settleUpPayLinks").innerHTML = links.length
+    ? links.map(l => `<a href="${l.href}" target="_blank" rel="noopener" class="pay-btn" style="background:${l.color};color:#fff;text-decoration:none;border:none;font-weight:700;font-size:14px">${l.label} · ${fmtUSD(amt)}</a>`).join("")
+    : `<p class="sub" style="margin:0">No payment links set up for ${escHtml(nameOf(to))}. They can add them in their profile.</p>`;
+
+  $("settleUpModal").classList.remove("hidden");
+  const doMark = async () => {
+    $("settleUpModal").classList.add("hidden");
+    await store.addPayment(uid(), {from, to, amount: round2(amt), ts: Date.now()});
+  };
+  $("settleUpConfirm").onclick = doMark;
+  $("settleUpSkip").onclick    = doMark;
 }
 
 async function removeCity(name) {
@@ -2215,6 +2272,7 @@ async function addExpense() {
   $("expDesc").value=""; $("expAmt").value="";
   if (cityPicker) cityPicker.clear(); else ui.selectedCity=null;
   ui.splitMode="even"; ui.customSplits={}; ui.lineItems=[]; ui.coverages={}; ui.payerId=null;
+  ui.currency = state.baseCurrency || "EUR";
   ui.manualRate=""; ui.forceManual=false; ui.scanError=null; ui.itemScanError=null;
   ui.receiptB64=null; ui.receiptMime=null;
   ui.category=""; ui.notes="";
@@ -2303,13 +2361,40 @@ $("addTodoBtn").onclick= addTodo;
 $("newTodo").onkeydown = e => { if(e.key==="Enter"){e.preventDefault();addTodo();} };
 $("tripName").addEventListener("blur", e => { const v=e.target.textContent.trim()||"SplitStack"; e.target.textContent=v; if(store) store.setTripName(v); });
 $("tripName").addEventListener("keydown", e => { if(e.key==="Enter"){e.preventDefault();e.target.blur();} });
-$("gearBtn").onclick   = () => { $("shareUrl").value=shareLink(); $("settings").classList.remove("hidden"); };
-$("setClose").onclick  = () => $("settings").classList.add("hidden");
+const doSwitchGroup = () => { if(store) store.cleanup(); GROUP_ID=null; GROUP_CODE=null; location.hash=""; showGroupScreen(); };
+$("gearBtn").onclick   = () => {
+  $("shareUrl").value = shareLink();
+  /* populate trip settings fields */
+  $("setTripName").value    = state.tripName || "";
+  $("setTripStart").value   = state.tripStart || "";
+  $("setTripEnd").value     = state.tripEnd   || "";
+  if ($("setBaseCurrency").options.length === 0)
+    $("setBaseCurrency").innerHTML = CURRENCIES.map(c => `<option value="${c}">${c} ${CUR_SYM[c]||""}</option>`).join("");
+  $("setBaseCurrency").value = state.baseCurrency || "EUR";
+  $("settings").classList.remove("hidden");
+};
+$("setClose").onclick       = () => $("settings").classList.add("hidden");
+$("settings").onclick       = e => { if (e.target === $("settings")) $("settings").classList.add("hidden"); };
+$("saveTripSettings").onclick = () => {
+  if (!store) return;
+  store.setTripSettings({
+    name:         $("setTripName").value.trim() || state.tripName,
+    tripStart:    $("setTripStart").value,
+    tripEnd:      $("setTripEnd").value,
+    baseCurrency: $("setBaseCurrency").value
+  });
+  $("settings").classList.add("hidden");
+};
 $("copyShare").onclick = copyShare;
 $("copyShare2").onclick= copyShare;
 $("copyInviteBtn").onclick = copyShare;
-$("switchGroup").onclick= () => { if(store) store.cleanup(); GROUP_ID=null; GROUP_CODE=null; location.hash=""; showGroupScreen(); };
+$("switchGroup").onclick     = doSwitchGroup;
+$("headerSwitchBtn").onclick = doSwitchGroup;
 $("logoutBtn").onclick = logout;
+
+/* settle-up modal */
+$("settleUpClose").onclick = () => $("settleUpModal").classList.add("hidden");
+$("settleUpModal").onclick = e => { if (e.target === $("settleUpModal")) $("settleUpModal").classList.add("hidden"); };
 
 /* history search */
 $("histSearchInput").oninput = e => { ui.histSearch = e.target.value; renderHistory(); };
