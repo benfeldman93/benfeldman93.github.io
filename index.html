@@ -18,12 +18,17 @@
     --ink:#20283C;--ink-soft:#5A6377;--paper:#FCFBF7;--kraft:#E7E2D6;--kraft-line:#CFC8B7;--accent:#20283C;
     --stamp:#C8453A;--stamp-deep:#9E3329;--green:#2E7D5B;--green-soft:#E4F0E9;--red-soft:#F7E5E2;
     --line:#D9D3C5;--shadow:0 1px 0 rgba(32,40,60,.04), 0 8px 24px -16px rgba(32,40,60,.35);
+    --card:#FFFFFF;
+  }
+  [data-theme="dark"]{
+    --ink:#F0EDE6;--ink-soft:#9A9488;--paper:#1A1A1F;--kraft:#22222A;--kraft-line:#333340;
+    --card:#2A2A35;--line:#383848;--shadow:0 1px 0 rgba(0,0,0,.2), 0 8px 24px -16px rgba(0,0,0,.6);
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{-webkit-text-size-adjust:100%}
   body{font-family:'Public Sans',system-ui,sans-serif;background:var(--kraft);color:var(--ink);line-height:1.45;min-height:100vh;
     background-image:radial-gradient(rgba(32,40,60,.035) 1px,transparent 1px);background-size:18px 18px;}
-  .wrap{max-width:560px;margin:0 auto;padding:18px 16px 120px}
+  .wrap{max-width:560px;margin:0 auto;padding:18px 16px 80px}
   h1,h2,h3,.disp{font-family:'Bricolage Grotesque',sans-serif}
   .mono{font-family:'Space Mono',monospace}
 
@@ -31,7 +36,7 @@
   .screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;
     background:var(--kraft);background-image:radial-gradient(rgba(32,40,60,.035) 1px,transparent 1px);
     background-size:18px 18px;z-index:200;overflow-y:auto;}
-  .auth-card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:28px 24px;
+  .auth-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px 24px;
     width:100%;max-width:380px;box-shadow:var(--shadow);}
   .auth-logo{font-family:'Bricolage Grotesque',sans-serif;font-size:36px;font-weight:800;
     color:var(--ink);letter-spacing:-.02em;margin-bottom:4px;}
@@ -45,7 +50,7 @@
   .auth-err{color:var(--stamp);font-size:12.5px;margin-top:8px;min-height:18px;line-height:1.4;}
   .group-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
   .group-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);
-    border-radius:10px;cursor:pointer;background:var(--paper);transition:.12s;}
+    border-radius:10px;cursor:pointer;background:var(--card);transition:.12s;}
   .group-item:hover{border-color:var(--ink);}
   .group-item .g-name{font-weight:700;font-size:15px;}
   .group-item .g-code{font-family:'Space Mono',monospace;font-size:11px;color:var(--ink-soft);}
@@ -80,15 +85,36 @@
   .code-row .copy{margin-left:auto;background:rgba(252,251,247,.12);border:none;color:var(--paper);
     border-radius:7px;padding:5px 9px;font-size:11px;font-weight:600;cursor:pointer}
 
-  /* ── tabs ── */
-  .tabs{display:flex;gap:4px;background:var(--paper);border:1px solid var(--line);border-radius:12px;
-    padding:4px;margin:14px 0;box-shadow:var(--shadow)}
-  .tab{flex:1;border:none;background:none;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;
-    font-size:13.5px;color:var(--ink-soft);padding:9px 4px;border-radius:8px;cursor:pointer;transition:.15s}
-  .tab[aria-selected="true"]{background:var(--ink);color:var(--paper)}
+  /* ── bottom nav ── */
+  .bottom-nav{position:fixed;bottom:0;left:0;right:0;height:64px;background:var(--card);border-top:1px solid var(--line);display:flex;align-items:stretch;z-index:50;padding-bottom:env(safe-area-inset-bottom)}
+  .bn-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:none;border:none;cursor:pointer;color:var(--ink-soft);font-family:inherit;padding:0;transition:.15s}
+  .bn-btn.active{color:var(--accent)}
+  .bn-icon{font-size:20px;line-height:1}
+  .bn-lbl{font-size:10px;font-weight:600;letter-spacing:.02em}
+  .bn-add{background:var(--accent);border-radius:16px;width:52px;height:44px;flex:0 0 52px;color:#fff !important;margin:0 8px;font-size:26px;align-self:center;padding-bottom:0}
+  .bn-add .bn-icon{font-size:28px;line-height:1}
+
+  /* ── stats ── */
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+  .stat-tile{background:var(--kraft);border-radius:12px;padding:14px;text-align:center}
+  .st-val{font-family:'Space Mono',monospace;font-size:18px;font-weight:700;color:var(--ink)}
+  .st-lbl{font-size:11px;color:var(--ink-soft);margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
+  .stat-highlights{display:flex;flex-direction:column;gap:8px;margin:14px 0}
+  .stat-hi{display:flex;align-items:center;gap:12px;background:var(--kraft);border-radius:10px;padding:11px 13px}
+  .sh-em{font-size:22px;flex-shrink:0}
+  .sh-t{font-size:11.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em}
+  .sh-v{font-size:14px;font-weight:700;color:var(--ink);margin-top:1px}
+  .sh-section-title{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);margin:14px 0 8px}
+  .stat-bars{display:flex;flex-direction:column;gap:8px}
+  .stat-bar-row{display:flex;align-items:center;gap:8px}
+  .stat-bar-row.mine .stat-bar-fill{background:var(--accent)}
+  .stat-bar-name{width:72px;font-size:12px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .stat-bar-track{flex:1;height:8px;background:var(--kraft);border-radius:4px;overflow:hidden}
+  .stat-bar-fill{height:100%;background:var(--ink-soft);border-radius:4px;transition:.3s}
+  .stat-bar-amt{font-size:12px;font-family:'Space Mono',monospace;flex-shrink:0;width:64px;text-align:right}
 
   /* ── cards ── */
-  .card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px;
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;
     box-shadow:var(--shadow);margin-bottom:14px}
   .card h2{font-size:17px;font-weight:700;margin-bottom:2px;letter-spacing:-.01em}
   .card .sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:14px}
@@ -111,7 +137,7 @@
   .my-line .v.in{color:#7FD8AC}.my-line .v.out{color:#F0A79E}
 
   /* ── settle stubs ── */
-  .stub{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:10px;
+  .stub{position:relative;background:var(--card);border:1px solid var(--line);border-radius:10px;
     padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
   .stub::before,.stub::after{content:"";position:absolute;width:14px;height:14px;border-radius:50%;
     background:var(--kraft);border:1px solid var(--line);top:50%;transform:translateY(-50%)}
@@ -136,7 +162,7 @@
   /* ── net grid ── */
   .net-grid{display:flex;flex-direction:column;gap:8px}
   .net-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);
-    border-radius:10px;background:var(--paper)}
+    border-radius:10px;background:var(--card)}
   .net-row.mine{border-color:var(--ink);box-shadow:0 0 0 1.5px var(--ink) inset}
   .avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:700;
     font-family:'Bricolage Grotesque',sans-serif;font-size:14px;color:var(--paper);flex:0 0 auto}
@@ -151,7 +177,7 @@
   label.fl{display:block;font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--ink-soft);
     margin:12px 0 5px;text-transform:uppercase}
   input[type=text],input[type=number],input[type=date],input[type=password],select{
-    width:100%;font-family:'Public Sans',sans-serif;font-size:15px;color:var(--ink);background:#fff;
+    width:100%;font-family:'Public Sans',sans-serif;font-size:15px;color:var(--ink);background:var(--card);
     border:1px solid var(--line);border-radius:9px;padding:11px 12px}
   input:focus,select:focus{outline:none;border-color:var(--ink)}
   .amt-input-wrap{position:relative}
@@ -163,8 +189,8 @@
 
   /* ── scan zone ── */
   .scan-zone{border:1.5px dashed var(--kraft-line);border-radius:11px;padding:16px;text-align:center;
-    cursor:pointer;transition:.15s;background:#fff;margin-bottom:4px}
-  .scan-zone:hover{border-color:var(--ink);background:#fffdf8}
+    cursor:pointer;transition:.15s;background:var(--card);margin-bottom:4px}
+  .scan-zone:hover{border-color:var(--ink);background:var(--card)}
   .scan-zone .si{font-size:24px}
   .scan-zone .st{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:14.5px;margin-top:4px}
   .scan-zone .sx{font-size:12px;color:var(--ink-soft);margin-top:2px}
@@ -183,19 +209,19 @@
 
   /* ── chips / seg ── */
   .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
-  .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-size:13px;
+  .chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 12px;font-size:13px;
     font-weight:600;color:var(--ink-soft);cursor:pointer;user-select:none;transition:.12s}
   .chip[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
   .chip.city[aria-pressed="true"]{background:var(--stamp);border-color:var(--stamp)}
   /* ── city combobox ── */
   .city-wrap{position:relative;margin-top:4px}
-  .city-input{width:100%;border:1px solid var(--line);background:#fff;border-radius:9px;
+  .city-input{width:100%;border:1px solid var(--line);background:var(--card);border-radius:9px;
     padding:10px 12px;font-family:'Public Sans',sans-serif;font-size:14px;color:var(--ink);
     outline:none;transition:.12s;-webkit-appearance:none}
   .city-input:focus{border-color:var(--ink)}
   .city-input.has-city{border-color:var(--stamp);background:var(--red-soft);color:var(--stamp);font-weight:600}
   .city-drop{position:absolute;z-index:60;top:calc(100% + 4px);left:0;right:0;
-    background:var(--paper);border:1px solid var(--line);border-radius:10px;
+    background:var(--card);border:1px solid var(--line);border-radius:10px;
     max-height:210px;overflow-y:auto;box-shadow:0 6px 24px rgba(32,40,60,.14);}
   .city-opt{display:flex;align-items:center;padding:9px 14px;cursor:pointer;font-size:14px;
     border-bottom:1px solid var(--line);gap:8px;user-select:none}
@@ -206,7 +232,7 @@
   .city-opt.city-add{color:var(--green);font-weight:600}
   .city-opt.city-add:hover{background:var(--green-soft)}
   .seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-top:4px}
-  .seg button{flex:1;border:none;background:#fff;padding:9px;font-size:13px;font-weight:600;
+  .seg button{flex:1;border:none;background:var(--card);padding:9px;font-size:13px;font-weight:600;
     color:var(--ink-soft);cursor:pointer}
   .seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
 
@@ -221,11 +247,11 @@
   /* ── item split ── */
   .item-split{margin-top:10px;border-top:1px dashed var(--line);padding-top:10px}
   .item-scan{border:1.5px dashed var(--kraft-line);border-radius:10px;padding:12px;text-align:center;
-    cursor:pointer;background:#fff;margin-bottom:10px;font-size:13px;font-weight:600;color:var(--ink-soft)}
-  .item-scan:hover{border-color:var(--ink);background:#fffdf8}
-  .item-row{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#fff}
+    cursor:pointer;background:var(--card);margin-bottom:10px;font-size:13px;font-weight:600;color:var(--ink-soft)}
+  .item-scan:hover{border-color:var(--ink);background:var(--card)}
+  .item-row{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--card)}
   .item-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-  .item-head .inm{flex:1;font-size:14px;font-weight:600;border:none;background:none;padding:2px 0}
+  .item-head .inm{flex:1;font-size:14px;font-weight:600;border:none;background:transparent;padding:2px 0;color:var(--ink)}
   .item-head .inm:focus{outline:none;border-bottom:1px solid var(--line)}
   .item-head .ipr{width:84px}
   .item-head .ipr input{font-family:'Space Mono',monospace;font-weight:700;font-size:13px;padding:7px 8px;padding-left:24px}
@@ -233,7 +259,7 @@
   .item-head .irm:hover{color:var(--stamp)}
   .item-claim{display:flex;flex-wrap:wrap;gap:6px}
   .item-claim .chip{padding:5px 10px;font-size:12px}
-  .item-add{width:100%;border:1px dashed var(--line);background:#fff;color:var(--ink-soft);border-radius:9px;
+  .item-add{width:100%;border:1px dashed var(--line);background:var(--card);color:var(--ink-soft);border-radius:9px;
     padding:9px;font-weight:600;font-size:13px;cursor:pointer;margin-bottom:8px}
   .item-add:hover{border-color:var(--ink);color:var(--ink)}
   .item-tot{font-size:12.5px;font-family:'Space Mono',monospace;margin-top:6px;line-height:1.6}
@@ -258,9 +284,9 @@
 
   /* ── to-add list ── */
   .todo-li{display:flex;align-items:center;gap:11px;padding:11px 12px;border:1px solid var(--line);
-    border-radius:10px;margin-bottom:8px;background:var(--paper)}
+    border-radius:10px;margin-bottom:8px;background:var(--card)}
   .todo-li .box{width:24px;height:24px;flex:0 0 auto;border:2px solid var(--kraft-line);border-radius:7px;
-    background:#fff;cursor:pointer;display:grid;place-items:center;font-size:14px;color:#fff;transition:.12s}
+    background:var(--card);cursor:pointer;display:grid;place-items:center;font-size:14px;color:#fff;transition:.12s}
   .todo-li .box.done{background:var(--green);border-color:var(--green)}
   .todo-li .tx{flex:1;font-size:14.5px;line-height:1.35}
   .todo-li.done .tx{text-decoration:line-through;color:var(--ink-soft)}
@@ -269,7 +295,7 @@
 
   /* ── expense row ── */
   .exp{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);
-    border-radius:10px;margin-bottom:9px;background:var(--paper)}
+    border-radius:10px;margin-bottom:9px;background:var(--card)}
   .exp .ic{width:38px;height:38px;border-radius:9px;background:var(--kraft);display:grid;place-items:center;font-size:18px;flex:0 0 auto}
   .exp .meta{flex:1;min-width:0}
   .exp .meta .d{font-weight:600;font-size:14.5px}
@@ -284,7 +310,7 @@
   .exp .ea .v{font-family:'Space Mono',monospace;font-weight:700;font-size:15px}
   .exp .ea .o{font-size:11px;color:var(--ink-soft);font-family:'Space Mono',monospace}
   .exp .ea .del{display:inline-block;margin-top:6px;margin-left:6px;border:1px solid var(--line);
-    background:#fff;color:var(--ink-soft);font-size:12.5px;font-weight:700;cursor:pointer;
+    background:var(--card);color:var(--ink-soft);font-size:12.5px;font-weight:700;cursor:pointer;
     border-radius:8px;padding:8px 12px;font-family:'Bricolage Grotesque',sans-serif}
   .exp .ea .del.danger{color:#fff;background:var(--stamp);border-color:var(--stamp)}
   .exp .ea .del.danger:hover{background:var(--stamp-deep)}
@@ -313,7 +339,7 @@
   .profile-avatar{width:72px;height:72px;font-size:26px;margin:0 auto 10px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
   .pay-btn{display:flex;align-items:center;gap:10px;width:100%;padding:11px 14px;
-    border:1px solid var(--line);border-radius:10px;background:var(--paper);cursor:pointer;
+    border:1px solid var(--line);border-radius:10px;background:var(--card);cursor:pointer;
     font-family:'Public Sans',sans-serif;font-size:14px;font-weight:600;color:var(--ink);
     text-decoration:none;margin-bottom:8px;transition:.12s}
   .pay-btn:hover{border-color:var(--ink);background:var(--kraft)}
@@ -337,13 +363,37 @@
   .allset .em{font-size:24px}
   .allset .t{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;color:var(--green)}
   .allset .x{font-size:13px;color:#3C6B57}
+  /* reactions */
+  .exp-reactions{display:flex;gap:6px;margin-top:5px;flex-wrap:wrap}
+  .rxn-btn{background:var(--kraft);border:1.5px solid var(--line);border-radius:20px;padding:2px 8px;
+    font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;color:var(--ink-soft);
+    transition:.12s;font-family:inherit;line-height:1.4}
+  .rxn-btn:hover{border-color:var(--ink-soft)}
+  .rxn-btn.mine{background:var(--paper);border-color:var(--accent);color:var(--accent);font-weight:700}
+  .rxn-count{font-size:11px;font-weight:700}
+  /* onboarding modal */
+  .onboard-overlay{position:fixed;inset:0;background:rgba(32,40,60,.7);display:grid;place-items:center;
+    padding:18px;z-index:200;backdrop-filter:blur(4px)}
+  .onboard-sheet{background:var(--card);border-radius:20px;max-width:400px;width:100%;padding:26px 22px;
+    text-align:center}
+  .onboard-sheet h2{font-size:22px;margin-bottom:6px}
+  .onboard-sheet .sub{margin-bottom:22px}
+  .onboard-tips{display:flex;flex-direction:column;gap:12px;text-align:left;margin-bottom:22px}
+  .onboard-tip{display:flex;gap:12px;align-items:flex-start}
+  .onboard-tip .tip-icon{font-size:22px;flex:0 0 auto;margin-top:1px}
+  .onboard-tip .tip-t{font-weight:700;font-size:14px;color:var(--ink)}
+  .onboard-tip .tip-x{font-size:12.5px;color:var(--ink-soft);margin-top:1px}
+  /* duplicate button */
+  .dup-entry{display:inline-block;margin-top:4px;margin-left:8px;font-size:11.5px;
+    font-weight:600;color:var(--ink-soft);cursor:pointer;text-decoration:underline;text-decoration-style:dotted}
+  .dup-entry:hover{color:var(--accent)}
   .overlay{position:fixed;inset:0;background:rgba(32,40,60,.55);display:grid;place-items:center;
     padding:18px;z-index:80;backdrop-filter:blur(3px)}
-  .sheet{background:var(--kraft);border-radius:16px;max-width:440px;width:100%;padding:22px;
+  .sheet{background:var(--card);border-radius:16px;max-width:440px;width:100%;padding:22px;
     box-shadow:0 30px 60px -20px rgba(0,0,0,.5);max-height:90vh;overflow:auto}
   .sheet h2{font-family:'Bricolage Grotesque',sans-serif;font-size:22px;font-weight:800;letter-spacing:-.01em}
   .sheet p{font-size:13.5px;color:var(--ink-soft);margin-top:6px;line-height:1.5}
-  .modecard{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:14px}
+  .modecard{background:var(--kraft);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:14px}
   .modecard .h{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:15px}
   .closex{float:right;background:none;border:none;font-size:20px;color:var(--ink-soft);cursor:pointer;line-height:1}
   .save-flag{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);
@@ -360,8 +410,8 @@
     .trip-name{font-size:23px}
     .total-amt{font-size:18px}
     .total-lbl,.kicker{font-size:10px}
-    .tabs{padding:3px;gap:3px}
-    .tab{font-size:12px;padding:8px 2px}
+    .bottom-nav{height:56px}
+    .bn-lbl{font-size:9px}
     .card{padding:14px}
     .card h2{font-size:15.5px}
     .card .sub{font-size:12px}
@@ -390,7 +440,7 @@
   .exp-notes{font-size:12px;color:var(--ink-soft);margin-top:3px;font-style:italic}
 
   /* ── textarea ── */
-  textarea{width:100%;font-family:'Public Sans',sans-serif;font-size:15px;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:9px;padding:11px 12px}
+  textarea{width:100%;font-family:'Public Sans',sans-serif;font-size:15px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:9px;padding:11px 12px}
   textarea:focus{outline:none;border-color:var(--ink)}
 
   /* ── swipe to delete ── */
@@ -457,6 +507,12 @@
   <div class="sheet">
     <button class="closex" id="setClose">×</button>
     <h2>Settings</h2>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;margin-top:12px">
+      <span style="font-weight:600;font-size:14px">Dark mode</span>
+      <button id="darkToggle" style="width:48px;height:26px;border-radius:13px;border:none;cursor:pointer;transition:.2s;position:relative;background:var(--kraft-line)" aria-label="Toggle dark mode">
+        <span id="darkToggleKnob" style="position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s;display:block"></span>
+      </button>
+    </div>
     <div class="modecard">
       <div class="h">Invite link</div>
       <p>Send this to your crew — anyone who opens it and logs in joins this group automatically.</p>
@@ -539,6 +595,34 @@
   </div>
 </div>
 
+<!-- ═══════════════════ ONBOARDING ═══════════════════ -->
+<div class="onboard-overlay hidden" id="onboardModal">
+  <div class="onboard-sheet">
+    <div style="font-size:40px;margin-bottom:10px">🧳</div>
+    <h2>Welcome to SplitStack</h2>
+    <p class="sub">Track group expenses without the awkward math.</p>
+    <div class="onboard-tips">
+      <div class="onboard-tip">
+        <span class="tip-icon">➕</span>
+        <div><div class="tip-t">Log expenses as you go</div><div class="tip-x">Hit the + button to add what you paid. Split evenly, by %, or custom amounts.</div></div>
+      </div>
+      <div class="onboard-tip">
+        <span class="tip-icon">⚖️</span>
+        <div><div class="tip-t">See who owes what</div><div class="tip-x">The Home tab shows exactly who needs to pay who — no calculator needed.</div></div>
+      </div>
+      <div class="onboard-tip">
+        <span class="tip-icon">👥</span>
+        <div><div class="tip-t">Invite your crew</div><div class="tip-x">Share the invite link from the Crew tab. Everyone sees the same data in real time.</div></div>
+      </div>
+      <div class="onboard-tip">
+        <span class="tip-icon">📊</span>
+        <div><div class="tip-t">Check the Stats tab</div><div class="tip-x">See totals, top spenders, and convert currencies on the fly.</div></div>
+      </div>
+    </div>
+    <button class="btn" id="onboardDone" style="width:100%">Let's go 🚀</button>
+  </div>
+</div>
+
 <!-- ═══════════════════ MAIN APP ═══════════════════ -->
 <div class="wrap hidden" id="app">
   <header class="masthead">
@@ -565,13 +649,6 @@
     </div>
   </header>
 
-  <div class="tabs" role="tablist">
-    <button class="tab" role="tab" aria-selected="true"  data-tab="settle">Settle</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="add">Add</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="todo">To-Add</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="history">History</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="crew">Crew</button>
-  </div>
 
   <section id="panel-settle">
     <div class="card hidden" id="myCard">
@@ -598,6 +675,18 @@
       <h2>Settled up</h2>
       <p class="sub">Payments that already changed hands. Tap undo if you made a mistake.</p>
       <div id="settledList"></div>
+    </div>
+    <div class="card" id="todoMiniCard" style="margin-top:0">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <h2 style="margin:0">To-Add</h2>
+        <span id="todoBadge" style="background:var(--stamp);color:#fff;border-radius:10px;padding:2px 8px;font-size:12px;font-weight:700;display:none"></span>
+      </div>
+      <p class="sub">Purchases to log later.</p>
+      <div id="todoList"></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input type="text" id="newTodo" placeholder="e.g. museum tickets" style="flex:1">
+        <button class="btn" id="addTodoBtn" style="white-space:nowrap;margin-top:0;width:auto;padding:11px 16px">Add</button>
+      </div>
     </div>
   </section>
 
@@ -691,6 +780,15 @@
     </div>
   </section>
 
+  <section id="panel-stats" class="hidden">
+    <div class="card" id="statsCard"></div>
+    <div class="card" id="converterCard">
+      <h2>Currency converter</h2>
+      <p class="sub">Quick conversion at today's live rate.</p>
+      <div id="converterBody"></div>
+    </div>
+  </section>
+
   <section id="panel-crew" class="hidden">
     <div class="card">
       <h2>The crew</h2>
@@ -703,17 +801,27 @@
     </div>
   </section>
 
-  <section id="panel-todo" class="hidden">
-    <div class="card">
-      <h2>To add later</h2>
-      <p class="sub">A shared running list. Jot down purchases now, check them off once they're logged on the Add tab.</p>
-      <div class="crew-add">
-        <input type="text" id="newTodo" placeholder="e.g. Gas in Munich — ask Will the amount" autocomplete="off">
-        <button id="addTodoBtn">+</button>
-      </div>
-      <div id="todoList" style="margin-top:14px"></div>
-    </div>
-  </section>
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="bn-btn active" data-tab="settle" aria-label="Home">
+      <span class="bn-icon">⚖️</span>
+      <span class="bn-lbl">Home</span>
+    </button>
+    <button class="bn-btn" data-tab="history" aria-label="History">
+      <span class="bn-icon">📋</span>
+      <span class="bn-lbl">History</span>
+    </button>
+    <button class="bn-btn bn-add" data-tab="add" aria-label="Add">
+      <span class="bn-icon">＋</span>
+    </button>
+    <button class="bn-btn" data-tab="stats" aria-label="Stats">
+      <span class="bn-icon">📊</span>
+      <span class="bn-lbl">Stats</span>
+    </button>
+    <button class="bn-btn" data-tab="crew" aria-label="Crew">
+      <span class="bn-icon">👥</span>
+      <span class="bn-lbl">Crew</span>
+    </button>
+  </nav>
 </div>
 
 <div class="save-flag" id="saveFlag">Saved</div>
@@ -984,6 +1092,7 @@ function showApp() {
     render();
   });
   subscribePush();
+  initOnboarding();
 }
 
 async function logout() {
@@ -1054,6 +1163,7 @@ function makeSupabaseStore(groupId) {
       receiptUrl:   e.receipt_url || null,
       category:     e.category || "",
       notes:        e.notes || "",
+      reactions:    e.reactions || {},
       deleted:      !!e.deleted,
       ts:           new Date(e.created_at).getTime()
     }));
@@ -1200,6 +1310,19 @@ function makeSupabaseStore(groupId) {
       sb.functions.invoke('notify-group', {
         body: { groupId, expenseDesc: e.desc, payerName: nameOf(meId) }
       }).catch(() => {});
+    },
+
+    async toggleReaction(id, emoji) {
+      const exp = state.expenses.find(e => e.id === id) || state.deletedExpenses.find(e => e.id === id);
+      if (!exp) return;
+      const rxns = JSON.parse(JSON.stringify(exp.reactions || {}));
+      if (!rxns[emoji]) rxns[emoji] = [];
+      const idx = rxns[emoji].indexOf(meId);
+      if (idx >= 0) rxns[emoji].splice(idx, 1); else rxns[emoji].push(meId);
+      if (rxns[emoji].length === 0) delete rxns[emoji];
+      const {error} = await sb.from("expenses").update({reactions: rxns}).eq("id", id);
+      if (error) return;
+      if (sub) sub(await fetchState());
     },
 
     async delExpense(id) {            /* soft delete — recoverable from History */
@@ -1472,6 +1595,7 @@ function render() {
   $("tripName").textContent = state.tripName;
   $("totalSpent").textContent = fmtUSD(state.expenses.reduce((s,e)=>s+e.amountUSD,0));
   renderMyCard(); renderSettle(); renderNet(); renderHistory(); renderCrew(); renderTodos(); renderAddForm();
+  if (ui.tab === "stats") renderStats();
 }
 function empty(big,t,x){ return `<div class="empty"><div class="big">${big}</div><div class="t">${t}</div><div class="x">${x}</div></div>`; }
 
@@ -1528,7 +1652,7 @@ function renderSettle() {
   if (state.expenses.length===0) { el.innerHTML=empty("🧾","Nothing to settle yet","Log a few expenses and the payments show up here."); renderSettled(); return; }
 
   const s = optimized ? settlements() : pairBalances();
-  if (s.length===0) { el.innerHTML=`<div class="allset"><span class="em">✅</span><div><div class="t">All square</div><div class="x">Nobody owes anybody.</div></div></div>`; renderSettled(); return; }
+  if (s.length===0) { el.innerHTML=`<div class="allset"><span class="em">🎉</span><div><div class="t">All square!</div><div class="x">Everyone's even — enjoy the trip!</div></div></div>`; renderSettled(); return; }
 
   el.innerHTML = s.map(p => {
     const mine=(p.from===meId||p.to===meId)?" mine":""; let who;
@@ -1703,14 +1827,16 @@ function renderHistory() {
         : "";
       const receipt = e.receiptUrl ? `<a class="rcpt" href="${e.receiptUrl}" target="_blank" rel="noopener">📷 receipt</a>` : "";
       const editBtn = deletedView ? "" : `<button class="edit-entry" data-edit="${e.id}">✏ Edit</button>`;
+      const dupBtn  = deletedView ? "" : `<button class="dup-entry" data-dup="${e.id}">⧉ Dup</button>`;
       const actions = deletedView
         ? `<button class="del go" data-restore="${e.id}">Restore</button><button class="del danger" data-purge="${e.id}">Delete</button>`
         : `<button class="del danger" data-del="${e.id}">Remove</button>`;
       const notesHtml = e.notes ? `<div class="exp-notes">${escHtml(e.notes)}</div>` : "";
       const swipeDel = deletedView ? "" : `<div class="swipe-del" data-swipedel="${e.id}">Remove</div>`;
+      const reactionsHtml = deletedView ? "" : renderReactions(e);
       return `<div class="exp${deletedView ? ' is-deleted' : ''}"><div class="ic">${icon}</div>
         <div class="meta"><div class="d">${escHtml(e.desc) || "Expense"}</div>
-        <div class="s">${cityTxt}${escHtml(nameOf(e.payer))} paid · ${e.splitMode === "even" ? `split equally, ${e.participants.length} way${e.participants.length !== 1 ? 's' : ''}` : `custom split · ${e.participants.length} way${e.participants.length !== 1 ? 's' : ''}`}</div>${notesHtml}${receipt}${editBtn}</div>
+        <div class="s">${cityTxt}${escHtml(nameOf(e.payer))} paid · ${e.splitMode === "even" ? `split equally, ${e.participants.length} way${e.participants.length !== 1 ? 's' : ''}` : `custom split · ${e.participants.length} way${e.participants.length !== 1 ? 's' : ''}`}</div>${notesHtml}${receipt}${editBtn}${dupBtn}${reactionsHtml}</div>
         <div class="ea"><div class="v">${fmtUSD(e.amountUSD)}</div>${orig}${actions}</div>${swipeDel}</div>`;
     }).join("");
     return `<div class="hist-date-group">
@@ -1723,7 +1849,9 @@ function renderHistory() {
   el.querySelectorAll("[data-restore]").forEach(b => b.onclick = () => store.restoreExpense(b.dataset.restore));
   el.querySelectorAll("[data-purge]").forEach(b => b.onclick = () => { if (confirm("Permanently delete this expense? This cannot be undone.")) store.purgeExpense(b.dataset.purge); });
   el.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => { const e = state.expenses.find(x => x.id === b.dataset.edit); if (e) openEditExpense(e); });
+  el.querySelectorAll("[data-dup]").forEach(b => b.onclick = () => { const e = state.expenses.find(x => x.id === b.dataset.dup); if (e) openDuplicateExpense(e); });
   el.querySelectorAll("[data-swipedel]").forEach(b => b.onclick = () => store.delExpense(b.dataset.swipedel));
+  el.querySelectorAll("[data-rxn]").forEach(b => b.onclick = () => store.toggleReaction(b.dataset.rxnid, b.dataset.rxn));
   wireSwipeDelete(el);
 }
 
@@ -1758,6 +1886,9 @@ function renderCrew() {
 function renderTodos() {
   const el=$("todoList"); if(!el) return;
   const todos=state.todos||[];
+  /* update badge */
+  const badge=$("todoBadge");
+  if (badge) { const open=(todos).filter(t=>!t.done).length; badge.style.display=open?"":"none"; badge.textContent=open; }
   if (!todos.length) { el.innerHTML=empty("📝","Nothing queued","Add purchases here that still need logging."); return; }
   /* open items first, checked-off ones sink to the bottom */
   const sorted=[...todos].sort((a,b)=>(a.done-b.done)||(a.ts-b.ts));
@@ -2250,6 +2381,57 @@ function cancelEdit() {
   switchTab("history");
 }
 
+function openDuplicateExpense(e) {
+  editingExpenseId = null; // new expense, not an edit
+  $("expDesc").value    = e.desc || "";
+  $("expAmt").value     = e.origAmount || "";
+  ui.currency           = e.origCurrency || "EUR";
+  const curSel          = $("expCur"); if (curSel) curSel.value = ui.currency;
+  $("amtSym").textContent = CUR_SYM[ui.currency] || "";
+  ui.date               = todayISO(); // default to today, not the original date
+  const dateInp         = $("expDate"); if (dateInp) dateInp.value = ui.date;
+  ui.payerId            = e.payer;
+  ui.selectedCity       = e.city || null;
+  if (cityPicker) cityPicker.sync();
+  ui.participants       = new Set(e.participants || state.members.map(m=>m.id));
+  ui.splitMode          = e.splitMode || "even";
+  ui.customSplits       = e.splitMode === "custom" && e.customSplits && e.rate
+    ? Object.fromEntries(Object.entries(e.customSplits).map(([id,v]) => [id, String(round2(v/e.rate))]))
+    : {};
+  ui.coverages          = e.coverages && typeof e.coverages === "object" ? {...e.coverages} : {};
+  ui.lineItems=[]; ui.manualRate=""; ui.forceManual=false;
+  ui.category           = e.category || "";
+  ui.notes              = e.notes || "";
+  ui.liveRate           = null; // fetch fresh rate for today
+  ui.scanError=null; ui.itemScanError=null; ui.receiptB64=null; ui.receiptMime=null;
+  switchTab("add");
+  renderAddForm();
+  refreshRate();
+}
+
+function renderReactions(e) {
+  const REACTION_EMOJIS = ["👍","😬","🔥"];
+  const rxns = e.reactions || {};
+  return `<div class="exp-reactions" data-rxnexp="${e.id}">` +
+    REACTION_EMOJIS.map(em => {
+      const users = rxns[em] || [];
+      const mine  = users.includes(meId);
+      return `<button class="rxn-btn${mine?" mine":""}" data-rxn="${em}" data-rxnid="${e.id}">${em}${users.length ? `<span class="rxn-count">${users.length}</span>` : ""}</button>`;
+    }).join("") +
+  `</div>`;
+}
+
+function initOnboarding() {
+  if (localStorage.getItem("splitstack_onboarded")) return;
+  const modal = $("onboardModal");
+  if (modal) modal.classList.remove("hidden");
+  const done = $("onboardDone");
+  if (done) done.onclick = () => {
+    localStorage.setItem("splitstack_onboarded", "1");
+    modal.classList.add("hidden");
+  };
+}
+
 async function addExpense() {
   const desc        = $("expDesc").value.trim();
   const category    = ui.category;
@@ -2385,10 +2567,117 @@ function wireSwipeDelete(container) {
 }
 
 function switchTab(t) {
-  ui.tab=t;
-  document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab===t));
-  ["settle","add","todo","history","crew"].forEach(p => $("panel-"+p).classList.toggle("hidden", p!==t));
-  if (t==="add") refreshRate();
+  ui.tab = t;
+  document.querySelectorAll(".bn-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === t));
+  ["settle","add","todo","history","crew","stats"].forEach(p => {
+    const el = $("panel-" + p); if (el) el.classList.toggle("hidden", p !== t);
+  });
+  if (t === "add") refreshRate();
+  if (t === "stats") renderStats();
+}
+
+function applyTheme(dark) {
+  document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+  const tog = $("darkToggle"), knob = $("darkToggleKnob");
+  if (tog) { tog.style.background = dark ? "var(--accent)" : "var(--kraft-line)"; }
+  if (knob) { knob.style.transform = dark ? "translateX(22px)" : ""; }
+  localStorage.setItem("theme", dark ? "dark" : "light");
+}
+let darkMode = localStorage.getItem("theme") === "dark";
+applyTheme(darkMode);
+
+function renderStats() {
+  const card = $("statsCard");
+  if (!card) return;
+  if (state.expenses.length === 0) {
+    card.innerHTML = "<h2>Trip stats</h2>" + empty("📊","No expenses yet","Add some expenses to see your trip breakdown.");
+    renderConverter();
+    return;
+  }
+
+  const total = round2(state.expenses.reduce((s,e) => s+e.amountUSD, 0));
+  const byPayer = {};
+  const byDay = {};
+  const byCat = {};
+
+  state.expenses.forEach(e => {
+    byPayer[e.payer] = (byPayer[e.payer]||0) + e.amountUSD;
+    const day = e.date || "unknown";
+    byDay[day] = (byDay[day]||0) + e.amountUSD;
+    const cat = e.category || "other";
+    byCat[cat] = (byCat[cat]||0) + e.amountUSD;
+  });
+
+  const topPayer = Object.entries(byPayer).sort((a,b)=>b[1]-a[1])[0];
+  const topDay   = Object.entries(byDay).sort((a,b)=>b[1]-a[1])[0];
+  const topCat   = Object.entries(byCat).sort((a,b)=>b[1]-a[1])[0];
+  const avgPerPerson = state.members.length ? round2(total/state.members.length) : 0;
+
+  const CATS = {food:"🍽️",drinks:"🍻",transport:"🚆",lodging:"🏨",activities:"🎟️",groceries:"🛒",coffee:"☕",taxi:"🚕",other:"💸"};
+
+  const payerRows = Object.entries(byPayer).sort((a,b)=>b[1]-a[1]);
+  const maxAmt = payerRows[0]?.[1] || 1;
+  const barChart = payerRows.map(([id, amt]) => {
+    const pct = Math.round((amt/maxAmt)*100);
+    const mine = id === meId ? " mine" : "";
+    return `<div class="stat-bar-row${mine}">
+      <span class="stat-bar-name">${escHtml(nameOf(id))}</span>
+      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${pct}%"></div></div>
+      <span class="stat-bar-amt">${fmtUSD(amt)}</span>
+    </div>`;
+  }).join("");
+
+  card.innerHTML = `
+    <h2>Trip stats</h2>
+    <div class="stat-grid">
+      <div class="stat-tile"><div class="st-val">${fmtUSD(total)}</div><div class="st-lbl">total spent</div></div>
+      <div class="stat-tile"><div class="st-val">${fmtUSD(avgPerPerson)}</div><div class="st-lbl">avg per person</div></div>
+      <div class="stat-tile"><div class="st-val">${state.expenses.length}</div><div class="st-lbl">expenses</div></div>
+      <div class="stat-tile"><div class="st-val">${state.members.length}</div><div class="st-lbl">crew members</div></div>
+    </div>
+    <div class="stat-highlights">
+      ${topPayer?`<div class="stat-hi"><span class="sh-em">💸</span><div><div class="sh-t">Biggest spender</div><div class="sh-v">${escHtml(nameOf(topPayer[0]))} · ${fmtUSD(topPayer[1])}</div></div></div>`:""}
+      ${topDay?`<div class="stat-hi"><span class="sh-em">📅</span><div><div class="sh-t">Most expensive day</div><div class="sh-v">${dateShort(topDay[0])} · ${fmtUSD(topDay[1])}</div></div></div>`:""}
+      ${topCat?`<div class="stat-hi"><span class="sh-em">${CATS[topCat[0]]||"💸"}</span><div><div class="sh-t">Top category</div><div class="sh-v">${topCat[0].charAt(0).toUpperCase()+topCat[0].slice(1)} · ${fmtUSD(topCat[1])}</div></div></div>`:""}
+    </div>
+    <div class="sh-section-title">Spending by person</div>
+    <div class="stat-bars">${barChart}</div>
+  `;
+
+  renderConverter();
+}
+
+function renderConverter() {
+  const card = $("converterBody"); if (!card) return;
+  const baseCur = state.baseCurrency || "EUR";
+  card.innerHTML = `
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+      <div class="amt-input-wrap" style="flex:1"><span class="sym" id="convSym">${CUR_SYM[baseCur]||baseCur}</span><input type="text" id="convAmt" inputmode="decimal" autocomplete="off" placeholder="0.00" style="padding-left:28px"></div>
+      <select id="convCur" style="padding:10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font-size:14px"></select>
+    </div>
+    <div id="convResult" style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;text-align:center;padding:14px;background:var(--kraft);border-radius:10px;color:var(--ink)">—</div>
+    <div id="convRate" style="text-align:center;font-size:12px;color:var(--ink-soft);margin-top:6px"></div>
+  `;
+  const curSel = $("convCur");
+  curSel.innerHTML = CURRENCIES.map(c => `<option value="${c}"${c===baseCur?" selected":""}>${c} ${CUR_SYM[c]||""}</option>`).join("");
+
+  const update = async () => {
+    const amt = readNum($("convAmt").value);
+    const cur = $("convCur").value;
+    $("convSym").textContent = CUR_SYM[cur] || cur;
+    if (!amt) { $("convResult").textContent = "—"; $("convRate").textContent=""; return; }
+    if (cur === "USD") {
+      $("convResult").textContent = fmtUSD(amt);
+      $("convRate").textContent = "No conversion needed";
+      return;
+    }
+    const rate = await getRate(cur, todayISO());
+    if (!rate) { $("convResult").textContent = "Rate unavailable"; return; }
+    $("convResult").textContent = fmtUSD(round2(amt * rate));
+    $("convRate").textContent = `1 ${cur} = ${rate.toFixed(4)} USD (live)`;
+  };
+  $("convAmt").oninput = update;
+  $("convCur").onchange = update;
 }
 
 function copyShare() { navigator.clipboard?.writeText(shareLink()); flashSaved(); }
@@ -2396,7 +2685,8 @@ function copyShare() { navigator.clipboard?.writeText(shareLink()); flashSaved()
 /* ══════════════════════════════════════════════════════════════
    WIRE UP EVENTS
    ══════════════════════════════════════════════════════════════ */
-document.querySelectorAll(".tab").forEach(b => b.onclick=()=>switchTab(b.dataset.tab));
+document.querySelectorAll(".bn-btn").forEach(b => b.onclick = () => switchTab(b.dataset.tab));
+$("darkToggle").onclick = () => { darkMode = !darkMode; applyTheme(darkMode); };
 $("addBtn").onclick    = addExpense;
 $("cancelEditBtn").onclick = cancelEdit;
 $("expAmt").oninput    = () => { renderRateLine(); syncSplits(); };
