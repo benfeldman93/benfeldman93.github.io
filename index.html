@@ -654,10 +654,12 @@
       <label class="fl">How</label>
       <div class="seg" id="splitSeg">
         <button type="button" data-mode="even"   aria-pressed="true">Split evenly</button>
+        <button type="button" data-mode="pct"    aria-pressed="false">By %</button>
         <button type="button" data-mode="custom" aria-pressed="false">Custom amounts</button>
         <button type="button" data-mode="items"  aria-pressed="false">By item</button>
       </div>
       <div class="custom-split hidden" id="customSplit"></div>
+      <div class="custom-split hidden" id="pctSplit"></div>
       <div class="item-split hidden" id="itemSplit"></div>
       <button class="btn" id="addBtn">Add to ledger</button>
     </div>
@@ -755,7 +757,7 @@ const CATEGORIES   = [
 /* ══ app state ══ */
 let state  = {tripName:"SplitStack", tripStart:"", tripEnd:"", baseCurrency:"EUR", members:[], expenses:[], deletedExpenses:[], payments:[], fxCache:{}, customCities:[], todos:[]};
 let ui     = {tab:"settle", selectedCity:null, participants:new Set(), splitMode:"even",
-              customSplits:{}, currency:"EUR", date:todayISO(), liveRate:null,
+              customSplits:{}, pctSplits:{}, currency:"EUR", date:todayISO(), liveRate:null,
               rateLoading:false, manualRate:"", forceManual:false, scanBusy:false, scanError:null,
               lineItems:[], itemScanBusy:false, itemScanError:null,
               receiptB64:null, receiptMime:null, histView:"active", histFilter:"all", histPaidBy:"", histSearch:"", coverages:{}, payerId:null, settleMode:"direct",
@@ -1822,14 +1824,15 @@ function renderAddForm() {
     `<button type="button" class="chip" data-part="${m.id}" aria-pressed="${ui.participants.has(m.id)}">${escHtml(m.name)}</button>`
   ).join("") || `<span class="sub">No members yet.</span>`;
   $("partChips").querySelectorAll("[data-part]").forEach(c =>
-    c.onclick=()=>{const id=c.dataset.part; ui.participants.has(id)?ui.participants.delete(id):ui.participants.add(id); renderCustomSplit(); renderAddForm();});
+    c.onclick=()=>{const id=c.dataset.part; ui.participants.has(id)?ui.participants.delete(id):ui.participants.add(id); Object.keys(ui.pctSplits).forEach(pid=>{ if(!ui.participants.has(pid)) delete ui.pctSplits[pid]; }); renderCustomSplit(); renderPctSplit(); renderAddForm();});
   $("splitSeg").querySelectorAll("[data-mode]").forEach(b => {
     b.setAttribute("aria-pressed", ui.splitMode===b.dataset.mode);
     b.onclick=()=>{ui.splitMode=b.dataset.mode; renderAddForm();};
   });
   $("customSplit").classList.toggle("hidden", ui.splitMode!=="custom");
+  $("pctSplit").classList.toggle("hidden", ui.splitMode!=="pct");
   $("itemSplit").classList.toggle("hidden", ui.splitMode!=="items");
-  renderCustomSplit(); renderItemSplit(); renderCoverageSection();
+  renderCustomSplit(); renderPctSplit(); renderItemSplit(); renderCoverageSection();
   /* category chips */
   const catChips = $("catChips");
   if (catChips) {
@@ -1882,7 +1885,7 @@ function renderRateLine() {
   el.innerHTML=`1 ${ui.currency} = ${ui.liveRate.toFixed(4)} USD &nbsp;<span style="color:var(--green)">●</span> live ECB rate, ${dateShort(ui.date)}${usd} &nbsp;·&nbsp; <a href="#" id="overrideRate" style="color:var(--ink-soft);font-weight:600">override</a>`;
   const ov=$("overrideRate"); if(ov) ov.onclick=e=>{e.preventDefault();ui.forceManual=true;ui.manualRate=ui.liveRate.toFixed(4);renderRateLine();syncSplits();};
 }
-function syncSplits(){ if(ui.splitMode==="custom")renderCustomSplit(); else if(ui.splitMode==="items")renderItemSplit(); }
+function syncSplits(){ if(ui.splitMode==="custom")renderCustomSplit(); else if(ui.splitMode==="pct")renderPctSplit(); else if(ui.splitMode==="items")renderItemSplit(); }
 
 function renderCustomSplit() {
   if (ui.splitMode!=="custom") return;
@@ -1903,6 +1906,33 @@ function updateCsRemain() {
   const remain=round2(amt-used);
   el.style.color = Math.abs(remain)<0.01 ? 'var(--green)' : 'var(--stamp)';
   el.textContent = Math.abs(remain)<0.01 ? 'Balanced ✓' : (remain>0 ? fmtOrig(remain,ui.currency)+' left' : fmtOrig(-remain,ui.currency)+' over');
+}
+
+function renderPctSplit() {
+  if (ui.splitMode !== "pct") return;
+  const box = $("pctSplit");
+  const parts = [...ui.participants];
+  if (!parts.length) { box.innerHTML = `<p class="sub">Pick who's splitting this first.</p>`; return; }
+  box.innerHTML = parts.map(id => {
+    const m = state.members.find(x => x.id === id) || {name: id};
+    return `<div class="cs-row">
+      <span class="nm">${escHtml(m.name)}</span>
+      <div class="amt-input-wrap"><span class="sym" style="left:auto;right:10px;position:absolute">%</span><input type="text" inputmode="decimal" autocomplete="off" pattern="[0-9]*[.,]?[0-9]*" data-pct="${id}" value="${ui.pctSplits[id] ?? ''}" placeholder="0" style="padding-left:12px;padding-right:32px"></div>
+    </div>`;
+  }).join("") + `<div id="pctRemain" style="text-align:right;font-size:12.5px;color:var(--ink-soft);margin-top:6px"></div>`;
+  box.querySelectorAll("[data-pct]").forEach(inp => {
+    inp.oninput = () => { ui.pctSplits[inp.dataset.pct] = inp.value; updatePctRemain(); };
+  });
+  updatePctRemain();
+}
+
+function updatePctRemain() {
+  const el = $("pctRemain"); if (!el) return;
+  const parts = [...ui.participants];
+  const used = parts.reduce((s, id) => s + (parseFloat(ui.pctSplits[id]) || 0), 0);
+  const left = round2(100 - used);
+  el.textContent = (left === 0 || Math.abs(left) < 0.01) ? "✓ 100% allocated" : (left > 0 ? left + "% remaining" : Math.abs(left) + "% over — must equal 100%");
+  el.style.color = (left === 0 || Math.abs(left) < 0.01) ? "var(--green)" : "var(--stamp)";
 }
 
 /* ── item split: scan a bill, claim line items ── */
@@ -2197,7 +2227,7 @@ function cancelEdit() {
   editingExpenseId = null;
   $("expDesc").value=""; $("expAmt").value="";
   if (cityPicker) cityPicker.clear(); else ui.selectedCity=null;
-  ui.splitMode="even"; ui.customSplits={}; ui.lineItems=[]; ui.coverages={}; ui.payerId=null;
+  ui.splitMode="even"; ui.customSplits={}; ui.pctSplits={}; ui.lineItems=[]; ui.coverages={}; ui.payerId=null;
   ui.manualRate=""; ui.forceManual=false;
   ui.category=""; ui.notes="";
   ui.participants = new Set(state.members.map(m=>m.id));
@@ -2239,6 +2269,12 @@ async function addExpense() {
     splitMode = "custom";                    /* stored as custom $ amounts so the math layer needs no change */
     customSplits={};
     participants.forEach(id => customSplits[id] = round2((per[id]||0)*rate));
+  } else if (ui.splitMode==="pct") {
+    const usedPct = participants.reduce((s,id)=>s+(parseFloat(ui.pctSplits[id])||0),0);
+    if (Math.abs(usedPct-100)>0.1) { alert("Percentages must add up to 100%. Currently at "+round2(usedPct)+"%."); $("addBtn").disabled=false; return; }
+    splitMode = "custom";
+    customSplits = {};
+    participants.forEach(id => { customSplits[id] = round2(((parseFloat(ui.pctSplits[id])||0)/100)*amountUSD); });
   }
 
   $("addBtn").disabled = true;
@@ -2271,7 +2307,7 @@ async function addExpense() {
   $("addBtn").disabled = false;
   $("expDesc").value=""; $("expAmt").value="";
   if (cityPicker) cityPicker.clear(); else ui.selectedCity=null;
-  ui.splitMode="even"; ui.customSplits={}; ui.lineItems=[]; ui.coverages={}; ui.payerId=null;
+  ui.splitMode="even"; ui.customSplits={}; ui.pctSplits={}; ui.lineItems=[]; ui.coverages={}; ui.payerId=null;
   ui.currency = state.baseCurrency || "EUR";
   ui.manualRate=""; ui.forceManual=false; ui.scanError=null; ui.itemScanError=null;
   ui.receiptB64=null; ui.receiptMime=null;
