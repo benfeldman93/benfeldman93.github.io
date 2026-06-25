@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SplitStack</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#20283C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SplitStack">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Public+Sans:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -977,6 +983,7 @@ function showApp() {
     }
     render();
   });
+  subscribePush();
 }
 
 async function logout() {
@@ -1189,6 +1196,10 @@ function makeSupabaseStore(groupId) {
       if (error) { alert("Error saving expense: " + error.message); return; }
       if (sub) sub(await fetchState());
       flashSaved();
+      /* notify group — fire and forget */
+      sb.functions.invoke('notify-group', {
+        body: { groupId, expenseDesc: e.desc, payerName: nameOf(meId) }
+      }).catch(() => {});
     },
 
     async delExpense(id) {            /* soft delete — recoverable from History */
@@ -1219,6 +1230,10 @@ function makeSupabaseStore(groupId) {
       });
       if (sub) sub(await fetchState());
       flashSaved();
+      /* notify group — fire and forget */
+      sb.functions.invoke('notify-group', {
+        body: { groupId, expenseDesc: `payment of $${p.amount}`, payerName: nameOf(meId) }
+      }).catch(() => {});
     },
 
     async delPayment(id) {
@@ -2460,7 +2475,45 @@ $("profileEditModal").onclick  = e => { if (e.target === $("profileEditModal")) 
 /* ══════════════════════════════════════════════════════════════
    BOOT
    ══════════════════════════════════════════════════════════════ */
+/* ── PWA: push subscription helpers ── */
+const VAPID_PUBLIC_KEY = ''; /* filled in by user after generating keys */
+
+async function subscribePush() {
+  if (!VAPID_PUBLIC_KEY || !('PushManager' in window)) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+    /* save subscription to Supabase so the Edge Function can push to it */
+    if (sb && meId && GROUP_ID) {
+      await sb.from('push_subscriptions').upsert({
+        user_id:  meId,
+        group_id: GROUP_ID,
+        endpoint: sub.endpoint,
+        p256dh:   btoa(String.fromCharCode(...new Uint8Array(sub.getKey('p256dh')))),
+        auth:     btoa(String.fromCharCode(...new Uint8Array(sub.getKey('auth'))))
+      }, {onConflict: 'user_id,group_id'});
+    }
+  } catch(err) { console.warn('Push subscribe:', err); }
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  return new Uint8Array([...raw].map(c => c.charCodeAt(0)));
+}
+
 async function boot() {
+  /* ── PWA: register service worker ── */
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(err => console.warn('SW:', err));
+  }
   if (!sb) { $("authScreen").classList.remove("hidden"); return; }
   const {data:{session}} = await sb.auth.getSession();
   if (session) {
