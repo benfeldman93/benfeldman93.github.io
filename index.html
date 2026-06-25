@@ -372,6 +372,25 @@
     input[type=text],input[type=number],input[type=date],input[type=password],select{font-size:16px}
   }
   @media(prefers-reduced-motion:reduce){*{transition:none!important}.spinner{animation:none}}
+
+  /* ── category chips ── */
+  .cat-chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+  .cat-chips::-webkit-scrollbar{display:none}
+  .cat-chip{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 10px;border-radius:10px;border:1.5px solid var(--line);background:var(--card);cursor:pointer;flex-shrink:0;font-size:11px;color:var(--ink-soft);transition:.12s}
+  .cat-chip .ci{font-size:18px}
+  .cat-chip.active{border-color:var(--accent);background:var(--accent);color:#fff}
+
+  /* ── expense notes ── */
+  .exp-notes{font-size:12px;color:var(--ink-soft);margin-top:3px;font-style:italic}
+
+  /* ── textarea ── */
+  textarea{width:100%;font-family:'Public Sans',sans-serif;font-size:15px;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:9px;padding:11px 12px}
+  textarea:focus{outline:none;border-color:var(--ink)}
+
+  /* ── swipe to delete ── */
+  .exp{position:relative;overflow:hidden}
+  .swipe-del{position:absolute;right:0;top:0;bottom:0;width:72px;background:#E85D5D;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border-radius:0 10px 10px 0;transform:translateX(72px);pointer-events:none}
+  .exp.swiped .swipe-del{pointer-events:auto;transform:translateX(0)}
 </style>
 </head>
 <body>
@@ -567,8 +586,12 @@
       </div>
       <input type="file" id="scanInput" accept="image/*" class="hidden">
       <input type="file" id="itemScanInput" accept="image/*" class="hidden">
+      <label class="fl">Category <span style="font-weight:400;text-transform:none">(optional)</span></label>
+      <div class="cat-chips" id="catChips"></div>
       <label class="fl" for="expDesc">What was it</label>
       <input type="text" id="expDesc" placeholder="Dinner, train tickets, Airbnb…">
+      <label class="fl" for="expNotes">Notes <span style="font-weight:400;text-transform:none">(optional)</span></label>
+      <textarea id="expNotes" placeholder="Any context, like who had what or whose card was used…" style="resize:none;height:60px"></textarea>
       <div class="row2 amtcur">
         <div>
           <label class="fl" for="expAmt">Amount</label>
@@ -617,7 +640,10 @@
 
   <section id="panel-history" class="hidden">
     <div class="card">
-      <h2>Expense history</h2>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <h2 style="margin:0">Expense history</h2>
+        <button type="button" id="exportCsvBtn" class="btn ghost" style="padding:5px 12px;font-size:12px">↓ Export CSV</button>
+      </div>
       <p class="sub">Everything logged, newest first. Dollar value is locked at the day's rate.</p>
       <div class="seg" id="histSeg" style="margin-bottom:10px">
         <button type="button" data-hview="active"  aria-pressed="true">Active</button>
@@ -689,6 +715,17 @@ const CURRENCIES   = ["EUR","USD","GBP","DKK","CZK","CHF","SEK","NOK","PLN","HUF
 const CUR_SYM      = {EUR:"€",USD:"$",GBP:"£",DKK:"kr",CZK:"Kč",CHF:"CHF",SEK:"kr",NOK:"kr",PLN:"zł",HUF:"Ft"};
 const AVATAR_COLORS= ["#C8453A","#2E7D5B","#3A5DA8","#B5762B","#7A4B9E","#1F8A8A","#A6453F","#4A7C3F"];
 const EXP_ICONS    = ["🍽️","🚆","🏨","🍻","🛒","🎟️","☕","⛽","🚕","🥐"];
+const CATEGORIES   = [
+  {key:"food",       icon:"🍽️", label:"Food"},
+  {key:"drinks",     icon:"🍻", label:"Drinks"},
+  {key:"transport",  icon:"🚆", label:"Transport"},
+  {key:"lodging",    icon:"🏨", label:"Lodging"},
+  {key:"activities", icon:"🎟️", label:"Activities"},
+  {key:"groceries",  icon:"🛒", label:"Groceries"},
+  {key:"coffee",     icon:"☕", label:"Coffee"},
+  {key:"taxi",       icon:"🚕", label:"Taxi"},
+  {key:"other",      icon:"💸", label:"Other"},
+];
 
 /* ══ app state ══ */
 let state  = {tripName:"SplitStack", members:[], expenses:[], deletedExpenses:[], payments:[], fxCache:{}, customCities:[], todos:[]};
@@ -696,7 +733,8 @@ let ui     = {tab:"settle", selectedCity:null, participants:new Set(), splitMode
               customSplits:{}, currency:"EUR", date:todayISO(), liveRate:null,
               rateLoading:false, manualRate:"", forceManual:false, scanBusy:false, scanError:null,
               lineItems:[], itemScanBusy:false, itemScanError:null,
-              receiptB64:null, receiptMime:null, histView:"active", histFilter:"all", histPaidBy:"", histSearch:"", coverages:{}, payerId:null, settleMode:"direct"};
+              receiptB64:null, receiptMime:null, histView:"active", histFilter:"all", histPaidBy:"", histSearch:"", coverages:{}, payerId:null, settleMode:"direct",
+              category:"", notes:""};
 let GROUP_ID = null, GROUP_CODE = null, meId = null, editingExpenseId = null;
 let rateReqId = 0, partsInit = false, store = null;
 
@@ -980,6 +1018,8 @@ function makeSupabaseStore(groupId) {
       coverages:    e.coverages || {},
       city:         e.city,
       receiptUrl:   e.receipt_url || null,
+      category:     e.category || "",
+      notes:        e.notes || "",
       deleted:      !!e.deleted,
       ts:           new Date(e.created_at).getTime()
     }));
@@ -1077,7 +1117,9 @@ function makeSupabaseStore(groupId) {
         custom_splits:e.customSplits,
         coverages:    e.coverages || null,
         city:         e.city,
-        receipt_url:  e.receiptUrl || null
+        receipt_url:  e.receiptUrl || null,
+        category:     e.category || null,
+        notes:        e.notes || null
       }).eq("id", id);
       if (error) { alert("Error saving changes: " + error.message); return; }
       if (sub) sub(await fetchState());
@@ -1099,7 +1141,9 @@ function makeSupabaseStore(groupId) {
         custom_splits:e.customSplits,
         coverages:    e.coverages || null,
         city:         e.city,
-        receipt_url:  e.receiptUrl || null
+        receipt_url:  e.receiptUrl || null,
+        category:     e.category || null,
+        notes:        e.notes || null
       });
       if (error) { alert("Error saving expense: " + error.message); return; }
       if (sub) sub(await fetchState());
@@ -1595,7 +1639,8 @@ function renderHistory() {
 
   el.innerHTML = groups.map(g => {
     const rows = g.items.map(({e, globalIdx}) => {
-      const icon = EXP_ICONS[globalIdx % EXP_ICONS.length];
+      const catObj = e.category ? CATEGORIES.find(c => c.key === e.category) : null;
+      const icon = catObj ? catObj.icon : EXP_ICONS[globalIdx % EXP_ICONS.length];
       const cityTxt = e.city ? `${e.city} · ` : "";
       const orig = (e.origCurrency && e.origCurrency !== "USD")
         ? `<div class="o">${fmtOrig(e.origAmount, e.origCurrency)}</div>`
@@ -1605,10 +1650,12 @@ function renderHistory() {
       const actions = deletedView
         ? `<button class="del go" data-restore="${e.id}">Restore</button><button class="del danger" data-purge="${e.id}">Delete</button>`
         : `<button class="del danger" data-del="${e.id}">Remove</button>`;
+      const notesHtml = e.notes ? `<div class="exp-notes">${escHtml(e.notes)}</div>` : "";
+      const swipeDel = deletedView ? "" : `<div class="swipe-del" data-swipedel="${e.id}">Remove</div>`;
       return `<div class="exp${deletedView ? ' is-deleted' : ''}"><div class="ic">${icon}</div>
         <div class="meta"><div class="d">${escHtml(e.desc) || "Expense"}</div>
-        <div class="s">${cityTxt}${escHtml(nameOf(e.payer))} paid · ${e.splitMode === "even" ? `split equally, ${e.participants.length} way${e.participants.length !== 1 ? 's' : ''}` : `custom split · ${e.participants.length} way${e.participants.length !== 1 ? 's' : ''}`}</div>${receipt}${editBtn}</div>
-        <div class="ea"><div class="v">${fmtUSD(e.amountUSD)}</div>${orig}${actions}</div></div>`;
+        <div class="s">${cityTxt}${escHtml(nameOf(e.payer))} paid · ${e.splitMode === "even" ? `split equally, ${e.participants.length} way${e.participants.length !== 1 ? 's' : ''}` : `custom split · ${e.participants.length} way${e.participants.length !== 1 ? 's' : ''}`}</div>${notesHtml}${receipt}${editBtn}</div>
+        <div class="ea"><div class="v">${fmtUSD(e.amountUSD)}</div>${orig}${actions}</div>${swipeDel}</div>`;
     }).join("");
     return `<div class="hist-date-group">
       <div class="hist-date-label">${dateLabel(g.date)}</div>
@@ -1620,6 +1667,8 @@ function renderHistory() {
   el.querySelectorAll("[data-restore]").forEach(b => b.onclick = () => store.restoreExpense(b.dataset.restore));
   el.querySelectorAll("[data-purge]").forEach(b => b.onclick = () => { if (confirm("Permanently delete this expense? This cannot be undone.")) store.purgeExpense(b.dataset.purge); });
   el.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => { const e = state.expenses.find(x => x.id === b.dataset.edit); if (e) openEditExpense(e); });
+  el.querySelectorAll("[data-swipedel]").forEach(b => b.onclick = () => store.delExpense(b.dataset.swipedel));
+  wireSwipeDelete(el);
 }
 
 function avatarEl(m, size=36) {
@@ -1742,6 +1791,17 @@ function renderAddForm() {
   $("customSplit").classList.toggle("hidden", ui.splitMode!=="custom");
   $("itemSplit").classList.toggle("hidden", ui.splitMode!=="items");
   renderCustomSplit(); renderItemSplit(); renderCoverageSection();
+  /* category chips */
+  const catChips = $("catChips");
+  if (catChips) {
+    catChips.innerHTML = `<div class="cat-chip${ui.category===''?' active':''}" data-cat=""><div class="ci">—</div><div>None</div></div>` +
+      CATEGORIES.map(c => `<div class="cat-chip${ui.category===c.key?' active':''}" data-cat="${c.key}"><div class="ci">${c.icon}</div><div>${c.label}</div></div>`).join("");
+    catChips.querySelectorAll("[data-cat]").forEach(ch => ch.onclick = () => { ui.category = ch.dataset.cat; renderAddForm(); });
+  }
+  /* notes textarea sync */
+  const notesEl = $("expNotes");
+  if (notesEl && notesEl !== document.activeElement) notesEl.value = ui.notes;
+
   $("addBtn").disabled = state.members.length < 2;
   const editing = !!editingExpenseId;
   $("editBanner").classList.toggle("hidden", !editing);
@@ -2067,6 +2127,8 @@ function openEditExpense(e) {
   }
   ui.coverages = e.coverages && typeof e.coverages === "object" ? {...e.coverages} : {};
   ui.lineItems=[]; ui.manualRate=""; ui.forceManual=false;
+  ui.category = e.category || "";
+  ui.notes    = e.notes || "";
   /* lock rate to the original entry — no live refetch */
   ui.liveRate = e.rate || null;
   ui.scanError=null; ui.itemScanError=null; ui.receiptB64=null; ui.receiptMime=null;
@@ -2080,6 +2142,7 @@ function cancelEdit() {
   if (cityPicker) cityPicker.clear(); else ui.selectedCity=null;
   ui.splitMode="even"; ui.customSplits={}; ui.lineItems=[]; ui.coverages={}; ui.payerId=null;
   ui.manualRate=""; ui.forceManual=false;
+  ui.category=""; ui.notes="";
   ui.participants = new Set(state.members.map(m=>m.id));
   renderAddForm();
   switchTab("history");
@@ -2087,6 +2150,8 @@ function cancelEdit() {
 
 async function addExpense() {
   const desc        = $("expDesc").value.trim();
+  const category    = ui.category;
+  const notes       = ($("expNotes") ? $("expNotes").value.trim() : "") || "";
   const payer       = ui.payerId || meId;
   const participants= [...ui.participants];
   let origAmount    = expAmtNum();
@@ -2135,7 +2200,7 @@ async function addExpense() {
     await store.updateExpense(editingExpenseId, {
       desc, origAmount, origCurrency:ui.currency, rate:lockedRate, amountUSD:lockedAmountUSD,
       date:ui.date, payer, participants, splitMode, customSplits:lockedCustomSplits, coverages,
-      city:ui.selectedCity, receiptUrl: existing?.receiptUrl||null
+      city:ui.selectedCity, receiptUrl: existing?.receiptUrl||null, category, notes
     });
     editingExpenseId = null;
   } else {
@@ -2143,7 +2208,7 @@ async function addExpense() {
     const receiptUrl = await uploadReceipt(expId);
     await store.addExpense(expId, {
       desc, origAmount, origCurrency:ui.currency, rate, amountUSD,
-      date:ui.date, payer, participants, splitMode, customSplits, coverages, city:ui.selectedCity, receiptUrl, ts:Date.now()
+      date:ui.date, payer, participants, splitMode, customSplits, coverages, city:ui.selectedCity, receiptUrl, category, notes, ts:Date.now()
     });
   }
   $("addBtn").disabled = false;
@@ -2152,8 +2217,62 @@ async function addExpense() {
   ui.splitMode="even"; ui.customSplits={}; ui.lineItems=[]; ui.coverages={}; ui.payerId=null;
   ui.manualRate=""; ui.forceManual=false; ui.scanError=null; ui.itemScanError=null;
   ui.receiptB64=null; ui.receiptMime=null;
+  ui.category=""; ui.notes="";
   ui.participants = new Set(state.members.map(m=>m.id));
   showScan(); switchTab("settle");
+}
+
+function exportCSV() {
+  const rows = [["Date","Description","Category","Notes","Payer","Amount (orig)","Currency","Amount (USD)","Participants","Split mode","City"]];
+  [...state.expenses].sort((a,b)=>a.date<b.date?1:-1).forEach(e => {
+    rows.push([
+      e.date||"",
+      e.desc||"",
+      e.category||"",
+      e.notes||"",
+      nameOf(e.payer),
+      e.origAmount||"",
+      e.origCurrency||"USD",
+      e.amountUSD||"",
+      e.participants.map(id=>nameOf(id)).join("; "),
+      e.splitMode||"even",
+      e.city||""
+    ]);
+  });
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const a = document.createElement("a");
+  a.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+  a.download = `splitstack-${todayISO()}.csv`;
+  a.click();
+}
+
+function wireSwipeDelete(container) {
+  container.querySelectorAll(".exp").forEach(row => {
+    let startX = 0, startY = 0, dx = 0;
+    const THRESHOLD = 72;
+    row.addEventListener("touchstart", e => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      dx = 0;
+      row.style.transition = "none";
+    }, {passive:true});
+    row.addEventListener("touchmove", e => {
+      dx = e.touches[0].clientX - startX;
+      const dy = Math.abs(e.touches[0].clientY - startY);
+      if (dy > Math.abs(dx)) return;
+      if (dx < 0) { row.style.transform = `translateX(${Math.max(dx,-THRESHOLD)}px)`; }
+    }, {passive:true});
+    row.addEventListener("touchend", () => {
+      row.style.transition = "transform .2s";
+      if (dx < -(THRESHOLD * 0.7)) {
+        row.style.transform = `translateX(-${THRESHOLD}px)`;
+        row.classList.add("swiped");
+      } else {
+        row.style.transform = "";
+        row.classList.remove("swiped");
+      }
+    });
+  });
 }
 
 function switchTab(t) {
@@ -2172,6 +2291,8 @@ document.querySelectorAll(".tab").forEach(b => b.onclick=()=>switchTab(b.dataset
 $("addBtn").onclick    = addExpense;
 $("cancelEditBtn").onclick = cancelEdit;
 $("expAmt").oninput    = () => { renderRateLine(); syncSplits(); };
+$("expNotes").oninput  = e => { ui.notes = e.target.value; };
+$("exportCsvBtn").onclick = exportCSV;
 $("expCur").onchange   = e => { ui.currency=e.target.value; $("amtSym").textContent=CUR_SYM[ui.currency]||""; ui.manualRate=""; ui.forceManual=false; refreshRate(); syncSplits(); };
 $("expDate").onchange  = e => { ui.date=e.target.value||todayISO(); ui.manualRate=""; ui.forceManual=false; refreshRate(); };
 $("scanZone").onclick  = () => $("scanInput").click();
