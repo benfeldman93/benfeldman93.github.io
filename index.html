@@ -146,6 +146,9 @@
   .stub .who{font-weight:600;font-size:14.5px;flex:1;min-width:0}
   .stub .who .arrow{color:var(--stamp);font-weight:700;margin:0 6px}
   .stub .amt{flex:0 0 auto;font-family:'Space Mono',monospace;font-weight:700;font-size:16px;min-width:72px;text-align:right}
+  .settle-up-btn{flex:0 0 auto;margin-left:12px;border:1px solid var(--accent);background:var(--paper);
+    color:var(--accent);font-size:12px;font-weight:700;border-radius:8px;padding:5px 10px;cursor:pointer;font-family:inherit}
+  .settle-up-btn:hover{background:var(--accent);color:#fff}
   .mark-paid{flex:0 0 auto;margin-left:12px;border:1px solid var(--green);background:var(--green-soft);
     color:var(--green);border-radius:8px;padding:8px 0;width:96px;text-align:center;white-space:nowrap;
     font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:12.5px;cursor:pointer;transition:.12s}
@@ -1657,9 +1660,15 @@ function renderSettle() {
     if (p.from===meId) who=`You<span class="arrow">pay →</span>${escHtml(nameOf(p.to))}`;
     else if(p.to===meId) who=`${escHtml(nameOf(p.from))}<span class="arrow">pays →</span>you`;
     else who=`${escHtml(nameOf(p.from))}<span class="arrow">pays →</span>${escHtml(nameOf(p.to))}`;
-    return `<div class="stub${mine}"><span class="who">${who}</span><span class="amt">${fmtUSD(p.amt)}</span><button class="mark-paid" data-from="${p.from}" data-to="${p.to}" data-amt="${p.amt}">Mark paid</button></div>`;
+    let actionBtn = "";
+    if (p.from === meId)
+      actionBtn = `<button class="settle-up-btn" data-from="${p.from}" data-to="${p.to}" data-amt="${p.amt}">Settle up</button>`;
+    else if (p.to === meId)
+      actionBtn = `<button class="mark-paid" data-from="${p.from}" data-to="${p.to}" data-amt="${p.amt}">Mark paid</button>`;
+    return `<div class="stub${mine}"><span class="who">${who}</span><span class="amt">${fmtUSD(p.amt)}</span>${actionBtn}</div>`;
   }).join("");
-  el.querySelectorAll(".mark-paid").forEach(b => b.onclick = () => markPaid(b.dataset.from, b.dataset.to, parseFloat(b.dataset.amt)));
+  el.querySelectorAll(".mark-paid").forEach(b => b.onclick = () => markPaid(b.dataset.from, b.dataset.to, parseFloat(b.dataset.amt), false));
+  el.querySelectorAll(".settle-up-btn").forEach(b => b.onclick = () => markPaid(b.dataset.from, b.dataset.to, parseFloat(b.dataset.amt), true));
   renderSettled();
 }
 
@@ -2145,23 +2154,34 @@ function wireItemSplit() {
 /* ══════════════════════════════════════════════════════════════
    ACTIONS
    ══════════════════════════════════════════════════════════════ */
-function markPaid(from, to, amt) {
+function markPaid(from, to, amt, isSending = false) {
   const payee = state.members.find(m => m.id === to) || {};
-  $("settleUpTitle").textContent = `${nameOf(from)} pays ${nameOf(to)}`;
-  $("settleUpSub").textContent   = `${fmtUSD(amt)} — use a payment link below, then mark as paid.`;
+  if (isSending) {
+    $("settleUpTitle").textContent = `Settle up with ${nameOf(to)}`;
+    $("settleUpSub").textContent   = `You owe ${fmtUSD(amt)} — pay using a link below, then tap "Mark as paid" to record it.`;
+  } else {
+    $("settleUpTitle").textContent = `Mark payment received`;
+    $("settleUpSub").textContent   = `${nameOf(from)} owes you ${fmtUSD(amt)} — confirm once you've received it.`;
+  }
 
   const links = [];
   if (payee.venmo)   links.push({label:"Pay on Venmo",   color:"#3d95ce", href:`https://venmo.com/${payee.venmo.replace(/^@/,"")}?txn=pay&amount=${amt}&note=SplitStack`});
   if (payee.cashapp) links.push({label:"Pay on Cash App", color:"#00c244", href:`https://cash.app/$${payee.cashapp.replace(/^\$/,"")}`});
   if (payee.zelle)   links.push({label:"Pay via Zelle",   color:"#6d1ed4", href:`https://enroll.zellepay.com/`});
 
-  $("settleUpPayLinks").innerHTML = links.length
-    ? links.map(l => `<a href="${l.href}" target="_blank" rel="noopener" class="pay-btn" style="background:${l.color};color:#fff;text-decoration:none;border:none;font-weight:700;font-size:14px">${l.label} · ${fmtUSD(amt)}</a>`).join("")
-    : `<p class="sub" style="margin:0">No payment links set up for ${escHtml(nameOf(to))}. They can add them in their profile.</p>`;
+  $("settleUpPayLinks").innerHTML = isSending
+    ? (links.length
+        ? links.map(l => `<a href="${l.href}" target="_blank" rel="noopener" class="pay-btn" style="background:${l.color};color:#fff;text-decoration:none;border:none;font-weight:700;font-size:14px">${l.label} · ${fmtUSD(amt)}</a>`).join("")
+        : `<p class="sub" style="margin:0">${escHtml(nameOf(to))} hasn't set up payment links yet. Pay them directly, then tap "Mark as paid".</p>`)
+    : "";
+
+  $("settleUpConfirm").textContent = isSending ? "✓ I paid — mark as paid" : "✓ Mark as received";
+  $("settleUpSkip").style.display  = isSending ? "" : "none";
 
   $("settleUpModal").classList.remove("hidden");
   const doMark = async () => {
     $("settleUpModal").classList.add("hidden");
+    $("settleUpSkip").style.display = "";
     await store.addPayment(uid(), {from, to, amount: round2(amt), ts: Date.now()});
   };
   $("settleUpConfirm").onclick = doMark;
