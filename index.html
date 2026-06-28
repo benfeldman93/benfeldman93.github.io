@@ -445,8 +445,6 @@
 
   /* ── swipe to delete ── */
   .exp{position:relative;overflow:hidden}
-  .swipe-del{position:absolute;right:0;top:0;bottom:0;width:72px;background:#E85D5D;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border-radius:0 10px 10px 0;transform:translateX(72px);pointer-events:none}
-  .exp.swiped .swipe-del{pointer-events:auto;transform:translateX(0)}
 </style>
 </head>
 <body>
@@ -1659,8 +1657,9 @@ function renderSettle() {
     if (p.from===meId) who=`You<span class="arrow">pay →</span>${escHtml(nameOf(p.to))}`;
     else if(p.to===meId) who=`${escHtml(nameOf(p.from))}<span class="arrow">pays →</span>you`;
     else who=`${escHtml(nameOf(p.from))}<span class="arrow">pays →</span>${escHtml(nameOf(p.to))}`;
-    return `<div class="stub${mine}"><span class="who">${who}</span><span class="amt">${fmtUSD(p.amt)}</span></div>`;
+    return `<div class="stub${mine}"><span class="who">${who}</span><span class="amt">${fmtUSD(p.amt)}</span><button class="mark-paid" data-from="${p.from}" data-to="${p.to}" data-amt="${p.amt}">Mark paid</button></div>`;
   }).join("");
+  el.querySelectorAll(".mark-paid").forEach(b => b.onclick = () => markPaid(b.dataset.from, b.dataset.to, parseFloat(b.dataset.amt)));
   renderSettled();
 }
 
@@ -1832,12 +1831,11 @@ function renderHistory() {
         ? `<button class="del go" data-restore="${e.id}">Restore</button><button class="del danger" data-purge="${e.id}">Delete</button>`
         : `<button class="del danger" data-del="${e.id}">Remove</button>`;
       const notesHtml = e.notes ? `<div class="exp-notes">${escHtml(e.notes)}</div>` : "";
-      const swipeDel = deletedView ? "" : `<div class="swipe-del" data-swipedel="${e.id}">Remove</div>`;
       const reactionsHtml = deletedView ? "" : renderReactions(e);
       return `<div class="exp${deletedView ? ' is-deleted' : ''}"><div class="ic">${icon}</div>
         <div class="meta"><div class="d">${escHtml(e.desc) || "Expense"}</div>
         <div class="s">${cityTxt}${escHtml(nameOf(e.payer))} paid · ${e.splitMode === "even" ? `split equally, ${e.participants.length} way${e.participants.length !== 1 ? 's' : ''}` : `custom split · ${e.participants.length} way${e.participants.length !== 1 ? 's' : ''}`}</div>${notesHtml}${receipt}${editBtn}${dupBtn}${reactionsHtml}</div>
-        <div class="ea"><div class="v">${fmtUSD(e.amountUSD)}</div>${orig}${actions}</div>${swipeDel}</div>`;
+        <div class="ea"><div class="v">${fmtUSD(e.amountUSD)}</div>${orig}${actions}</div></div>`;
     }).join("");
     return `<div class="hist-date-group">
       <div class="hist-date-label">${dateLabel(g.date)}</div>
@@ -1850,9 +1848,7 @@ function renderHistory() {
   el.querySelectorAll("[data-purge]").forEach(b => b.onclick = () => { if (confirm("Permanently delete this expense? This cannot be undone.")) store.purgeExpense(b.dataset.purge); });
   el.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => { const e = state.expenses.find(x => x.id === b.dataset.edit); if (e) openEditExpense(e); });
   el.querySelectorAll("[data-dup]").forEach(b => b.onclick = () => { const e = state.expenses.find(x => x.id === b.dataset.dup); if (e) openDuplicateExpense(e); });
-  el.querySelectorAll("[data-swipedel]").forEach(b => b.onclick = () => store.delExpense(b.dataset.swipedel));
   el.querySelectorAll("[data-rxn]").forEach(b => b.onclick = () => store.toggleReaction(b.dataset.rxnid, b.dataset.rxn));
-  wireSwipeDelete(el);
 }
 
 function avatarEl(m, size=36) {
@@ -2537,34 +2533,6 @@ function exportCSV() {
   a.click();
 }
 
-function wireSwipeDelete(container) {
-  container.querySelectorAll(".exp").forEach(row => {
-    let startX = 0, startY = 0, dx = 0;
-    const THRESHOLD = 72;
-    row.addEventListener("touchstart", e => {
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-      dx = 0;
-      row.style.transition = "none";
-    }, {passive:true});
-    row.addEventListener("touchmove", e => {
-      dx = e.touches[0].clientX - startX;
-      const dy = Math.abs(e.touches[0].clientY - startY);
-      if (dy > Math.abs(dx)) return;
-      if (dx < 0) { row.style.transform = `translateX(${Math.max(dx,-THRESHOLD)}px)`; }
-    }, {passive:true});
-    row.addEventListener("touchend", () => {
-      row.style.transition = "transform .2s";
-      if (dx < -(THRESHOLD * 0.7)) {
-        row.style.transform = `translateX(-${THRESHOLD}px)`;
-        row.classList.add("swiped");
-      } else {
-        row.style.transform = "";
-        row.classList.remove("swiped");
-      }
-    });
-  });
-}
 
 function switchTab(t) {
   ui.tab = t;
