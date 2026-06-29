@@ -39,7 +39,14 @@
   [data-theme="dark"]{
     --ink:#F0EDE6;--ink-soft:#9A9488;--paper:#1A1A1F;--kraft:#22222A;--kraft-line:#333340;
     --card:#2A2A35;--line:#383848;--shadow:0 1px 0 rgba(0,0,0,.2), 0 8px 24px -16px rgba(0,0,0,.6);
+    --accent-soft:#2D3044;
   }
+  /* dark mode overrides for components that invert ink/paper */
+  [data-theme="dark"] .masthead{background:#16161E}
+  [data-theme="dark"] .btn.dark{background:#3A3F50;color:var(--ink)}
+  [data-theme="dark"] .btn.dark:hover{background:#464D62}
+  [data-theme="dark"] .auth-tab[aria-selected="true"],
+  [data-theme="dark"] .auth-tab.active{background:#3A3F50;color:var(--ink)}
   /* ── background patterns ── */
   [data-pattern="dots"] body{background-image:radial-gradient(var(--kraft-line) 1.2px,transparent 1.2px);background-size:18px 18px}
   [data-pattern="stripes"] body{background-image:repeating-linear-gradient(45deg,transparent,transparent 8px,var(--kraft-line) 8px,var(--kraft-line) 9px);background-size:auto}
@@ -1283,7 +1290,7 @@ function makeSupabaseStore(groupId) {
       sb.from("group_members").select("user_id, created_at").eq("group_id", groupId).order("created_at"),
       sb.from("expenses").select("*").eq("group_id", groupId).order("created_at"),
       sb.from("payments").select("*").eq("group_id", groupId).order("created_at"),
-      sb.from("groups").select("name, custom_cities").eq("id", groupId).single(),
+      sb.from("groups").select("name, trip_start, trip_end, base_currency, custom_cities").eq("id", groupId).single(),
       sb.from("fx_cache").select("*"),
       sb.from("todos").select("*").eq("group_id", groupId).order("created_at")
     ]);
