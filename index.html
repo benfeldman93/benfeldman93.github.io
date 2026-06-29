@@ -386,6 +386,12 @@
   .rxn-btn.mine{background:var(--paper);border-color:var(--accent);color:var(--accent);font-weight:700}
   .rxn-count{font-size:11px;font-weight:700}
   /* onboarding modal */
+  /* privacy policy */
+  .privacy-section{margin-bottom:18px}
+  .privacy-h{font-weight:700;font-size:14px;color:var(--ink);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--line)}
+  .privacy-p{font-size:13px;color:var(--ink-soft);line-height:1.6;margin:0 0 8px}
+  .privacy-list{margin:0 0 0 16px;padding:0;font-size:13px;color:var(--ink-soft);line-height:1.7}
+  .privacy-list li{margin-bottom:4px}
   .onboard-overlay{position:fixed;inset:0;background:rgba(32,40,60,.7);display:grid;place-items:center;
     padding:18px;z-index:200;backdrop-filter:blur(4px)}
   .onboard-sheet{background:var(--card);border-radius:20px;max-width:400px;width:100%;padding:26px 22px;
@@ -483,6 +489,10 @@
       <input type="password" id="authPass" placeholder="password" autocomplete="current-password">
       <div class="auth-err" id="authErr"></div>
       <button class="btn" id="authSubmit" style="margin-top:14px">Log in</button>
+      <p id="authPrivacyNote" class="hidden" style="font-size:11.5px;color:var(--ink-soft);text-align:center;margin-top:10px;line-height:1.5">
+        By signing up you agree that your expense data is stored on Supabase and receipt images may be processed by Google Gemini.
+        <button type="button" id="authPrivacyLink" style="background:none;border:none;color:var(--accent);font-size:11.5px;cursor:pointer;text-decoration:underline;padding:0">Privacy Policy</button>
+      </p>
     </form>
   </div>
 </div>
@@ -511,6 +521,72 @@
     </div>
     <div class="auth-err" id="groupErr"></div>
     <button class="btn ghost" id="groupLogoutBtn" style="margin-top:14px;font-size:13px">Log out</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ PRIVACY POLICY ═══════════════════ -->
+<div class="overlay hidden" id="privacyModal">
+  <div class="sheet" style="max-height:85vh;overflow-y:auto">
+    <button class="closex" id="privacyClose">×</button>
+    <h2>Privacy Policy</h2>
+    <p class="sub" style="margin-bottom:18px">Plain English. Last updated June 2026.</p>
+
+    <div class="privacy-section">
+      <div class="privacy-h">What we collect</div>
+      <ul class="privacy-list">
+        <li><strong>Account info</strong> — username and password (password is hashed by Supabase and never readable by anyone, including us).</li>
+        <li><strong>Profile info</strong> — display name, and optionally: Venmo/Cash App/Zelle handles, phone number, email address, and a profile photo. All optional, only used to help your group settle up.</li>
+        <li><strong>Expense data</strong> — descriptions, amounts, dates, categories, notes, who paid, who was involved, and the city. Visible only to members of your group.</li>
+        <li><strong>Receipt photos</strong> — if you scan a receipt, the photo is stored so your group can view it later. See "Receipt scanning" below.</li>
+        <li><strong>Payment records</strong> — when someone marks a settlement as paid, we log who paid who and how much.</li>
+        <li><strong>Device preferences</strong> — dark mode preference and whether you've seen the onboarding tips. Stored only on your device (localStorage), never on our servers.</li>
+      </ul>
+    </div>
+
+    <div class="privacy-section">
+      <div class="privacy-h">Receipt scanning</div>
+      <p class="privacy-p">When you scan a receipt, the image is sent to <strong>Google Gemini</strong> (Google's AI service) to extract the totals and line items. Google receives the image to process it. We do not store the image with Google — their API processes it and returns the text. Google's privacy policy governs how they handle API data: <a href="https://policies.google.com/privacy" target="_blank" rel="noopener" style="color:var(--accent)">policies.google.com/privacy</a>.</p>
+      <p class="privacy-p">If you'd prefer not to use AI scanning, you can always enter amounts manually.</p>
+    </div>
+
+    <div class="privacy-section">
+      <div class="privacy-h">Where your data lives</div>
+      <p class="privacy-p">All data (accounts, expenses, photos) is stored on <strong>Supabase</strong>, which runs on AWS infrastructure. Data is encrypted in transit (HTTPS) and at rest. Supabase's privacy policy: <a href="https://supabase.com/privacy" target="_blank" rel="noopener" style="color:var(--accent)">supabase.com/privacy</a>.</p>
+    </div>
+
+    <div class="privacy-section">
+      <div class="privacy-h">Who can see your data</div>
+      <ul class="privacy-list">
+        <li>Your <strong>group members</strong> can see all expenses, payment records, and profile info (including any payment handles you've added) within your shared group.</li>
+        <li><strong>We</strong> (the app developer) can access data as the Supabase project owner, but we don't look at your data unless you ask us to help with a problem.</li>
+        <li><strong>No one else.</strong> We don't sell data, share it with advertisers, or use it for anything other than running this app.</li>
+      </ul>
+    </div>
+
+    <div class="privacy-section">
+      <div class="privacy-h">Your rights</div>
+      <ul class="privacy-list">
+        <li><strong>Leave a group</strong> — you can leave any group at any time from the Crew tab. Your past expenses remain in the group log (since they affect other members' balances) but you are removed as a participant going forward.</li>
+        <li><strong>Delete your data</strong> — to request full deletion of your account and data, open a GitHub issue or email the developer. We'll remove your account within 30 days.</li>
+        <li><strong>Export</strong> — use the "Export CSV" button in the History tab to download all expense data at any time.</li>
+      </ul>
+    </div>
+
+    <div class="privacy-section">
+      <div class="privacy-h">What we don't do</div>
+      <ul class="privacy-list">
+        <li>No advertising or tracking cookies</li>
+        <li>No selling or sharing your data with third parties (beyond the infrastructure providers above)</li>
+        <li>No profiling or analytics on your spending behaviour</li>
+      </ul>
+    </div>
+
+    <div class="privacy-section">
+      <div class="privacy-h">Contact</div>
+      <p class="privacy-p">Questions or deletion requests: open an issue at <a href="https://github.com/benfeldman93/benfeldman93.github.io/issues" target="_blank" rel="noopener" style="color:var(--accent)">github.com/benfeldman93</a> or email benfeldman933@gmail.com.</p>
+    </div>
+
+    <button class="btn" id="privacyDone" style="width:100%;margin-top:8px">Got it</button>
   </div>
 </div>
 
@@ -548,6 +624,12 @@
       <button class="btn dark" id="saveTripSettings" style="margin-top:12px">Save settings</button>
     </div>
     <button class="btn ghost" id="switchGroup" style="margin-top:12px;width:100%">⇄ Switch group</button>
+    <div class="modecard" style="margin-top:14px">
+      <div class="h">Privacy &amp; data</div>
+      <p>Your expense data is stored on Supabase. Receipt images are processed by Google Gemini for scanning. We don't sell or share your data.</p>
+      <button class="btn ghost" id="openPrivacyFromSettings" style="width:100%;margin-top:8px;font-size:13px">📄 Read full Privacy Policy</button>
+      <button class="btn ghost" id="leaveGroupBtn" style="width:100%;margin-top:8px;font-size:13px;color:var(--stamp);border-color:var(--stamp)">🚪 Leave this group</button>
+    </div>
   </div>
 </div>
 
@@ -916,6 +998,18 @@ function sanitizeCode(s){ return (s||"").toUpperCase().replace(/[^A-Z0-9_-]/g,""
    ══════════════════════════════════════════════════════════════ */
 let authMode = "login";
 
+function openPrivacy() {
+  $("privacyModal").classList.remove("hidden");
+}
+function closePrivacy() {
+  $("privacyModal").classList.add("hidden");
+}
+$("privacyClose").onclick = closePrivacy;
+$("privacyDone").onclick  = closePrivacy;
+$("privacyModal").onclick = e => { if (e.target === $("privacyModal")) closePrivacy(); };
+$("authPrivacyLink").onclick = openPrivacy;
+$("openPrivacyFromSettings").onclick = openPrivacy;
+
 function setAuthMode(mode) {
   authMode = mode;
   document.querySelectorAll(".auth-tab").forEach(t => {
@@ -927,6 +1021,7 @@ function setAuthMode(mode) {
   $("authPass").autocomplete  = mode === "login" ? "current-password" : "new-password";
   $("authErr").textContent    = "";
   $("nickWrap").classList.toggle("hidden", mode !== "signup");
+  $("authPrivacyNote").classList.toggle("hidden", mode !== "signup");
 }
 document.querySelectorAll(".auth-tab").forEach(b => b.onclick = () => setAuthMode(b.dataset.auth));
 
@@ -1113,6 +1208,21 @@ function showApp() {
 async function logout() {
   if (store) store.cleanup();
   await sb.auth.signOut();
+  location.hash = "";
+  location.reload();
+}
+
+async function leaveGroup() {
+  if (!GROUP_ID || !meId) return;
+  const confirmed = confirm(
+    "Leave this group? You'll be removed as a member. Your past expenses remain in the group log (they affect other members' balances). You can rejoin with the group code."
+  );
+  if (!confirmed) return;
+  const { error } = await sb.from("group_members").delete().eq("group_id", GROUP_ID).eq("user_id", meId);
+  if (error) { alert("Couldn't leave group: " + error.message); return; }
+  $("settings").classList.add("hidden");
+  if (store) store.cleanup();
+  GROUP_ID = null; GROUP_CODE = null;
   location.hash = "";
   location.reload();
 }
@@ -2813,6 +2923,7 @@ $("copyShare").onclick = copyShare;
 $("copyShare2").onclick= copyShare;
 $("copyInviteBtn").onclick = copyShare;
 $("switchGroup").onclick     = doSwitchGroup;
+$("leaveGroupBtn").onclick   = leaveGroup;
 $("headerSwitchBtn").onclick = doSwitchGroup;
 $("logoutBtn").onclick = logout;
 
