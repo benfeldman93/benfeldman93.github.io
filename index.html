@@ -210,6 +210,9 @@
     border-top-color:var(--stamp);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
   @keyframes spin{to{transform:rotate(360deg)}}
   .scan-err{color:var(--stamp);font-size:12.5px;margin-top:6px}
+  .scan-warn{background:#FFF8E1;border:1px solid #F9C94E;border-radius:9px;padding:9px 12px;font-size:12.5px;color:#7A5C00;margin-bottom:10px;line-height:1.4}
+  [data-theme="dark"] .scan-warn{background:#3A3010;border-color:#7A6020;color:#F5D87A}
+  .tip-add{flex:0 0 auto !important;white-space:nowrap;border-color:var(--green) !important;color:var(--green) !important}
 
   /* ── rate line ── */
   .rate-line{margin-top:8px;font-size:12.5px;font-family:'Space Mono',monospace;color:var(--ink-soft);
@@ -885,7 +888,7 @@ let state  = {tripName:"SplitStack", tripStart:"", tripEnd:"", baseCurrency:"EUR
 let ui     = {tab:"settle", selectedCity:null, participants:new Set(), splitMode:"even",
               customSplits:{}, pctSplits:{}, currency:"EUR", date:todayISO(), liveRate:null,
               rateLoading:false, manualRate:"", forceManual:false, scanBusy:false, scanError:null,
-              lineItems:[], itemScanBusy:false, itemScanError:null,
+              lineItems:[], itemScanBusy:false, itemScanError:null, scanWarning:null,
               receiptB64:null, receiptMime:null, histView:"active", histFilter:"all", histPaidBy:"", histSearch:"", coverages:{}, payerId:null, settleMode:"direct",
               category:"", notes:""};
 let GROUP_ID = null, GROUP_CODE = null, meId = null, editingExpenseId = null;
@@ -1476,10 +1479,18 @@ async function callReceiptScan(file) {
   try { ({b64,media}=await compressImage(file,1280,0.72)); }
   catch(e) { b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=()=>rej();r.readAsDataURL(file);}); media=file.type||"image/png"; }
   ui.receiptB64 = b64; ui.receiptMime = media;   /* kept for upload on save */
-  const prompt = 'This image is a receipt, itemized bill, or payment screenshot. Return ONLY JSON (no markdown), shaped: '
-    + '{"unclear":false,"amount":number_or_null,"currency":"USD","description":"2-4 words","items":[{"name":"short name","price":number}]}. '
-    + 'amount = the single grand TOTAL paid (include tax and tip). items = every individual line item with its own price (include tax and tip/gratuity as their own items) — leave [] for a payment screenshot with no itemization. '
-    + 'If the photo is too blurry, cropped, or you are not confident reading it, set "unclear" to true.';
+  const prompt = `You are a precise receipt data extractor. Study every line of the image carefully.
+
+Return ONLY valid JSON — no markdown, no explanation, no code fences:
+{"unclear":false,"amount":number_or_null,"currency":"USD","description":"2-4 words","items":[{"name":"short label","price":number}]}
+
+Rules:
+- "amount": the final TOTAL or AMOUNT DUE (the number the customer actually owes or paid). Include built-in tax and any automatic gratuity already printed on the bill. Exclude blank optional tip lines.
+- "items": list every charged line in order — individual dishes/drinks, subtotal, tax, service fees, automatic gratuity (if a dollar amount is printed). Do NOT include the final TOTAL row itself as an item.
+- Prices must be exact as printed (e.g. 14.50, not 15). If you cannot clearly read a price, omit that item.
+- After extracting, verify: sum(item prices) should approximately equal amount. If they differ by more than $0.10, look again — you likely missed a line (tax, service charge, etc.).
+- "description": 2–4 words summarising what was purchased (e.g. "dinner for four", "Airbnb booking").
+- If the image is blurry, sideways, or unreadable, set "unclear":true and leave everything else null/[].`;
   const data = await anthropicMessages({model:"claude-sonnet-4-6",max_tokens:1500,messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:media,data:b64}},{type:"text",text:prompt}]}]});
   const text = (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("").replace(/```json|```/g,"").trim();
   return JSON.parse(text);
@@ -1490,7 +1501,17 @@ function applyScan(parsed) {
   if (parsed.description)                                      $("expDesc").value = parsed.description;
   const items = Array.isArray(parsed.items) ? parsed.items : [];
   ui.lineItems = items.map(it => ({id:uid(), name:String(it.name||"Item"), price:(it.price!=null?String(it.price):""), claimers:new Set()}));
-  if (ui.lineItems.length >= 2) ui.splitMode = "items";        /* itemized receipt → jump to By-item, pre-filled */
+  if (ui.lineItems.length >= 2) ui.splitMode = "items";
+  /* warn if items don't add up to the scanned total */
+  const cur = parsed.currency || ui.currency;
+  const sym = CUR_SYM[cur] || cur;
+  const itemsSum = round2(items.reduce((s, it) => s + (Number(it.price) || 0), 0));
+  const total    = parsed.amount != null ? round2(parsed.amount) : null;
+  if (total !== null && items.length && Math.abs(itemsSum - total) > 0.10) {
+    ui.scanWarning = `Items add up to ${sym}${itemsSum.toFixed(2)} but receipt total is ${sym}${total.toFixed(2)} — check for a missing line (tax, service charge, etc.).`;
+  } else {
+    ui.scanWarning = null;
+  }
 }
 async function scanScreenshot(file) {
   if (!file) return;
@@ -2173,8 +2194,14 @@ function renderItemSplit() {
     </div>`;
   }).join("");
 
-  box.innerHTML = scanZone + rows +
-    `<button type="button" class="item-add" id="itemAddBtn">+ Add an item</button>` +
+  const warnHtml = ui.scanWarning
+    ? `<div class="scan-warn">⚠️ ${escHtml(ui.scanWarning)}</div>`
+    : "";
+  box.innerHTML = scanZone + warnHtml + rows +
+    `<div style="display:flex;gap:8px;margin-top:6px">
+       <button type="button" class="item-add" id="itemAddBtn" style="flex:1">+ Add an item</button>
+       <button type="button" class="item-add tip-add" id="itemTipBtn">🤝 Add tip</button>
+     </div>` +
     `<div class="item-tot" id="itemTotBlock"></div>`;
   updateItemComputed();
   wireItemSplit();
@@ -2191,6 +2218,9 @@ function updateItemComputed() {
   const tb=$("itemTotBlock"); if(!tb) return;
   const totLines = parts.map(id=>`<div class="ln"><span>${escHtml(nameOf(id))}</span><span>${fmtOrig(totals.per[id]||0,ui.currency)}</span></div>`).join("");
   tb.innerHTML = `<div class="ln" style="font-weight:700;border-top:1px solid var(--line);padding-top:6px"><span>Items total</span><span>${fmtOrig(totals.sum,ui.currency)}</span></div>${totLines}`;
+  /* keep the top amount field in sync so what you see is what gets saved */
+  const amtField = $("expAmt");
+  if (amtField && amtField !== document.activeElement && totals.sum > 0) amtField.value = totals.sum;
 }
 function itemTotals() {
   const parts=[...ui.participants]; const per={}; parts.forEach(id=>per[id]=0); let sum=0;
@@ -2206,6 +2236,7 @@ function itemTotals() {
 function wireItemSplit() {
   const z=$("itemScanZone"); if(z) z.onclick=()=>$("itemScanInput").click();
   const add=$("itemAddBtn"); if(add) add.onclick=()=>{ui.lineItems.push({id:uid(),name:"",price:"",claimers:new Set()});renderItemSplit();};
+  const tipBtn=$("itemTipBtn"); if(tipBtn) tipBtn.onclick=()=>{ui.lineItems.push({id:uid(),name:"Tip",price:"",claimers:new Set()});ui.scanWarning=null;renderItemSplit();};
   $("itemSplit").querySelectorAll("[data-iname]").forEach(inp=>inp.oninput=()=>{const it=ui.lineItems.find(x=>x.id===inp.dataset.iname);if(it)it.name=inp.value;});
   /* price typing only recomputes totals/hints — no rebuild, so the field keeps focus */
   $("itemSplit").querySelectorAll("[data-iprice]").forEach(inp=>inp.oninput=()=>{const it=ui.lineItems.find(x=>x.id===inp.dataset.iprice);if(it){it.price=inp.value;updateItemComputed();}});
