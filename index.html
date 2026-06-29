@@ -20,14 +20,47 @@
     --line:#D9D3C5;--shadow:0 1px 0 rgba(32,40,60,.04), 0 8px 24px -16px rgba(32,40,60,.35);
     --card:#FFFFFF;
   }
+  /* ── app themes ── */
+  /* Cobalt — passport blue, departure boards */
+  [data-app-theme="travel"]  {--accent:#1B3F7A;--accent-soft:#DDE8F8;--paper:#F4F7FD;--kraft:#DDE8F8;--kraft-line:#B8CEF0;--card:#fff;--stamp:#C0392B;--stamp-deep:#96281B;--green:#1A7A4A;--green-soft:#D5F5E3;--red-soft:#FADBD8}
+  /* Trattoria — candlelit, burgundy wine */
+  [data-app-theme="dinner"]  {--accent:#6B1A1A;--accent-soft:#F5E6E6;--paper:#FFFAF7;--kraft:#F5E0D0;--kraft-line:#E8C8B0;--card:#fff;--stamp:#8B0000;--stamp-deep:#5C0000;--green:#2E6B3A;--green-soft:#D5F5E3;--red-soft:#FADBD8}
+  /* Sage — biophilic, warm apartment */
+  [data-app-theme="home"]    {--accent:#3D5A3E;--accent-soft:#DDE8DA;--paper:#F7FAF6;--kraft:#DDE8DA;--kraft-line:#BBC9B8;--card:#fff;--stamp:#8B3A1C;--stamp-deep:#6A2A10;--green:#3D5A3E;--green-soft:#DDE8DA;--red-soft:#FADBD8}
+  /* After dark — deep indigo, night out */
+  [data-app-theme="party"]   {--accent:#2A1760;--accent-soft:#E4DEFF;--paper:#F9F8FF;--kraft:#E4DEFF;--kraft-line:#C4B6FF;--card:#fff;--stamp:#8B1A6B;--stamp-deep:#5E1048;--green:#1A6B4A;--green-soft:#D5F5E3;--red-soft:#FADBD8}
+  /* Graphite — clean slate, no fuss */
+  [data-app-theme="work"]    {--accent:#2C3440;--accent-soft:#E2E6EB;--paper:#F7F8FA;--kraft:#E2E6EB;--kraft-line:#C8CDD6;--card:#fff;--stamp:#C0392B;--stamp-deep:#96281B;--green:#2E6B4A;--green-soft:#D5F5E3;--red-soft:#FADBD8}
+  /* Ember — golden hour, warm amber */
+  [data-app-theme="sunset"]  {--accent:#8B4513;--accent-soft:#FAEBD7;--paper:#FFFCF7;--kraft:#FAEBD7;--kraft-line:#E8D0A8;--card:#fff;--stamp:#6B1A1A;--stamp-deep:#4A0E0E;--green:#2E6B3A;--green-soft:#D5F5E3;--red-soft:#FADBD8}
+  /* Tidal — sea glass, coastal */
+  [data-app-theme="ocean"]   {--accent:#1A5C5C;--accent-soft:#D4EEED;--paper:#F2FAFA;--kraft:#D4EEED;--kraft-line:#A8D8D6;--card:#fff;--stamp:#8B3A1C;--stamp-deep:#6A2A10;--green:#1A5C5C;--green-soft:#D4EEED;--red-soft:#FADBD8}
+  /* ── dark mode ── */
   [data-theme="dark"]{
     --ink:#F0EDE6;--ink-soft:#9A9488;--paper:#1A1A1F;--kraft:#22222A;--kraft-line:#333340;
     --card:#2A2A35;--line:#383848;--shadow:0 1px 0 rgba(0,0,0,.2), 0 8px 24px -16px rgba(0,0,0,.6);
   }
-  *{box-sizing:border-box;margin:0;padding:0}
-  html{-webkit-text-size-adjust:100%}
-  body{font-family:'Public Sans',system-ui,sans-serif;background:var(--kraft);color:var(--ink);line-height:1.45;min-height:100vh;
-    background-image:radial-gradient(rgba(32,40,60,.035) 1px,transparent 1px);background-size:18px 18px;}
+  /* ── background patterns ── */
+  [data-pattern="dots"] body{background-image:radial-gradient(var(--kraft-line) 1.2px,transparent 1.2px);background-size:18px 18px}
+  [data-pattern="stripes"] body{background-image:repeating-linear-gradient(45deg,transparent,transparent 8px,var(--kraft-line) 8px,var(--kraft-line) 9px);background-size:auto}
+  [data-pattern="grid"] body{background-image:linear-gradient(var(--kraft-line) 1px,transparent 1px),linear-gradient(90deg,var(--kraft-line) 1px,transparent 1px);background-size:20px 20px}
+  [data-pattern="none"] body,[data-pattern=""] body,body{background-image:none}
+  /* ── group type + theme picker ── */
+  .cg-type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+  .cg-type-card{border:2px solid var(--line);border-radius:12px;padding:12px 8px;text-align:center;cursor:pointer;transition:.15s;background:var(--card)}
+  .cg-type-card:hover{border-color:var(--ink-soft)}
+  .cg-type-card.selected{border-color:var(--accent);background:var(--accent-soft)}
+  .cg-type-card .ct-em{font-size:26px;display:block;margin-bottom:4px}
+  .cg-type-card .ct-lb{font-size:12px;font-weight:700;color:var(--ink)}
+  .theme-swatches{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .theme-swatch{width:52px;height:28px;border-radius:14px;border:3px solid transparent;cursor:pointer;transition:.15s;position:relative;flex-shrink:0}
+  .theme-swatch.active{border-color:var(--ink);box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--ink)}
+  .theme-swatch-label{font-size:10px;color:var(--ink-soft);text-align:center;margin-top:3px;width:52px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pattern-btns{display:flex;gap:8px;margin-top:10px}
+  .pattern-btn{flex:1;border:2px solid var(--line);border-radius:9px;padding:8px 4px;text-align:center;cursor:pointer;font-size:11px;font-weight:600;color:var(--ink-soft);background:var(--card);transition:.15s}
+  .pattern-btn:hover{border-color:var(--ink-soft)}
+  .pattern-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+  .pattern-btn .pb-preview{height:22px;border-radius:4px;margin-bottom:4px;background:var(--kraft)}
   .wrap{max-width:560px;margin:0 auto;padding:18px 16px 80px}
   h1,h2,h3,.disp{font-family:'Bricolage Grotesque',sans-serif}
   .mono{font-family:'Space Mono',monospace}
@@ -524,6 +557,20 @@
   </div>
 </div>
 
+<!-- ═══════════════════ CREATE GROUP MODAL ═══════════════════ -->
+<div class="overlay hidden" id="createGroupModal">
+  <div class="sheet">
+    <button class="closex" id="createGroupClose">×</button>
+    <h2>Create a group</h2>
+    <p class="sub" style="margin-bottom:14px">Pick what it's for — sets the look and feel.</p>
+    <div class="cg-type-grid" id="cgTypeGrid"></div>
+    <label class="fl" for="newGroupName" style="margin-top:16px">Group name</label>
+    <input type="text" id="newGroupName" placeholder="e.g. Europe 2026, Dinner Club, Apartment">
+    <div class="auth-err" id="createGroupErr" style="margin-top:8px"></div>
+    <button class="btn" id="createGroupSubmit" style="margin-top:14px;width:100%">Create group</button>
+  </div>
+</div>
+
 <!-- ═══════════════════ PRIVACY POLICY ═══════════════════ -->
 <div class="overlay hidden" id="privacyModal">
   <div class="sheet" style="max-height:85vh;overflow-y:auto">
@@ -624,6 +671,13 @@
       <button class="btn dark" id="saveTripSettings" style="margin-top:12px">Save settings</button>
     </div>
     <button class="btn ghost" id="switchGroup" style="margin-top:12px;width:100%">⇄ Switch group</button>
+    <div class="modecard" style="margin-top:14px">
+      <div class="h">Theme</div>
+      <p>Color palette for this group.</p>
+      <div class="theme-swatches" id="themeSwatches"></div>
+      <p style="font-size:12px;color:var(--ink-soft);margin-top:10px">Background pattern</p>
+      <div class="pattern-btns" id="patternBtns"></div>
+    </div>
     <div class="modecard" style="margin-top:14px">
       <div class="h">Privacy &amp; data</div>
       <p>Your expense data is stored on Supabase. Receipt images are processed by Google Gemini for scanning. We don't sell or share your data.</p>
@@ -1142,18 +1196,7 @@ async function renderGroupList() {
     el.onclick = () => enterGroup(el.dataset.gid, el.dataset.gcode));
 }
 
-$("createGroupBtn").onclick = async () => {
-  const name = prompt("Group name (e.g. Europe Trip):", "My Group");
-  if (!name || !name.trim()) return;
-  const code = name.trim().replace(/\s+/g,"").toUpperCase().slice(0,8)
-             + Math.random().toString(36).slice(2,5).toUpperCase();
-  const {data, error} = await sb.from("groups")
-    .insert({name: name.trim(), code, created_by: meId})
-    .select().single();
-  if (error) { $("groupErr").textContent = "Couldn't create group: " + error.message; return; }
-  await sb.from("group_members").insert({group_id: data.id, user_id: meId});
-  enterGroup(data.id, data.code);
-};
+$("createGroupBtn").onclick = () => openCreateGroup();
 
 $("joinBtn").onclick = async () => {
   const code = sanitizeCode($("joinCode").value);
@@ -1180,6 +1223,7 @@ async function enterGroup(gid, gcode) {
   GROUP_ID   = gid;
   GROUP_CODE = gcode;
   location.hash = gcode;
+  loadGroupTheme();
   showApp();
 }
 
@@ -2769,6 +2813,121 @@ function switchTab(t) {
   if (t === "stats") renderStats();
 }
 
+/* ── theme + pattern data ── */
+const APP_THEMES = [
+  {key:"classic", label:"Kraft",      accent:"#20283C", kraft:"#E7E2D6"},
+  {key:"travel",  label:"Cobalt",     accent:"#1B3F7A", kraft:"#DDE8F8"},
+  {key:"dinner",  label:"Trattoria",  accent:"#6B1A1A", kraft:"#F5E0D0"},
+  {key:"home",    label:"Sage",       accent:"#3D5A3E", kraft:"#DDE8DA"},
+  {key:"party",   label:"After Dark", accent:"#2A1760", kraft:"#E4DEFF"},
+  {key:"work",    label:"Graphite",   accent:"#2C3440", kraft:"#E2E6EB"},
+  {key:"sunset",  label:"Ember",      accent:"#8B4513", kraft:"#FAEBD7"},
+  {key:"ocean",   label:"Tidal",      accent:"#1A5C5C", kraft:"#D4EEED"},
+];
+const GROUP_TYPES = [
+  {key:"travel",   label:"Road trip",  emoji:"🧳", theme:"travel"},
+  {key:"dinner",   label:"Going out",  emoji:"🍝", theme:"dinner"},
+  {key:"home",     label:"The house",  emoji:"🛋️", theme:"home"},
+  {key:"party",    label:"Night out",  emoji:"🎊", theme:"party"},
+  {key:"work",     label:"Work stuff", emoji:"📋", theme:"work"},
+  {key:"personal", label:"Just us",    emoji:"🤝", theme:"classic"},
+];
+const PATTERNS = [
+  {key:"none",    label:"Clean"},
+  {key:"dots",    label:"Grain"},
+  {key:"stripes", label:"Lines"},
+  {key:"grid",    label:"Graph"},
+];
+
+function applyAppTheme(themeKey, patternKey) {
+  const t = APP_THEMES.find(x => x.key === themeKey) || APP_THEMES[0];
+  document.documentElement.setAttribute("data-app-theme", t.key);
+  document.body.setAttribute("data-pattern", patternKey || "none");
+  if (GROUP_ID) {
+    localStorage.setItem("ss_theme_" + GROUP_ID, t.key);
+    localStorage.setItem("ss_pattern_" + GROUP_ID, patternKey || "none");
+  }
+  renderThemePicker();
+}
+
+function loadGroupTheme() {
+  if (!GROUP_ID) return;
+  const t = localStorage.getItem("ss_theme_" + GROUP_ID) || "classic";
+  const p = localStorage.getItem("ss_pattern_" + GROUP_ID) || "none";
+  document.documentElement.setAttribute("data-app-theme", t);
+  document.body.setAttribute("data-pattern", p);
+}
+
+function renderThemePicker() {
+  const sw = $("themeSwatches"), pb = $("patternBtns");
+  if (!sw || !pb) return;
+  const curTheme   = document.documentElement.getAttribute("data-app-theme") || "classic";
+  const curPattern = document.body.getAttribute("data-pattern") || "none";
+
+  sw.innerHTML = APP_THEMES.map(t =>
+    `<div style="text-align:center">
+       <div class="theme-swatch${t.key===curTheme?" active":""}" data-theme-pick="${t.key}" title="${t.label}"
+            style="background:linear-gradient(90deg,${t.kraft} 50%,${t.accent} 50%)"></div>
+       <div class="theme-swatch-label">${t.label}</div>
+     </div>`
+  ).join("");
+  sw.querySelectorAll("[data-theme-pick]").forEach(el =>
+    el.onclick = () => applyAppTheme(el.dataset.themePick, curPattern)
+  );
+
+  pb.innerHTML = PATTERNS.map(p =>
+    `<button class="pattern-btn${p.key===curPattern?" active":""}" data-pat="${p.key}">${p.label}</button>`
+  ).join("");
+  pb.querySelectorAll("[data-pat]").forEach(el =>
+    el.onclick = () => applyAppTheme(curTheme, el.dataset.pat)
+  );
+}
+
+/* ── create group modal ── */
+let selectedGroupType = "personal";
+function openCreateGroup() {
+  selectedGroupType = "personal";
+  $("newGroupName").value = "";
+  $("createGroupErr").textContent = "";
+  renderGroupTypeGrid();
+  $("createGroupModal").classList.remove("hidden");
+}
+function renderGroupTypeGrid() {
+  const grid = $("cgTypeGrid"); if (!grid) return;
+  grid.innerHTML = GROUP_TYPES.map(gt =>
+    `<div class="cg-type-card${gt.key===selectedGroupType?" selected":""}" data-gtype="${gt.key}">
+       <span class="ct-em">${gt.emoji}</span>
+       <span class="ct-lb">${gt.label}</span>
+     </div>`
+  ).join("");
+  grid.querySelectorAll("[data-gtype]").forEach(el => el.onclick = () => {
+    selectedGroupType = el.dataset.gtype;
+    grid.querySelectorAll(".cg-type-card").forEach(c => c.classList.toggle("selected", c.dataset.gtype === selectedGroupType));
+  });
+}
+
+$("createGroupClose").onclick  = () => $("createGroupModal").classList.add("hidden");
+$("createGroupModal").onclick  = e => { if (e.target === $("createGroupModal")) $("createGroupModal").classList.add("hidden"); };
+$("createGroupSubmit").onclick = async () => {
+  const name = $("newGroupName").value.trim();
+  if (!name) { $("createGroupErr").textContent = "Enter a group name."; return; }
+  $("createGroupSubmit").disabled = true;
+  const code = name.replace(/\s+/g,"").toUpperCase().slice(0,8)
+             + Math.random().toString(36).slice(2,5).toUpperCase();
+  const {data, error} = await sb.from("groups")
+    .insert({name, code, created_by: meId})
+    .select().single();
+  if (error) { $("createGroupErr").textContent = "Couldn't create group: " + error.message; $("createGroupSubmit").disabled=false; return; }
+  await sb.from("group_members").insert({group_id: data.id, user_id: meId});
+  // store theme choice before entering group
+  const chosenTheme = GROUP_TYPES.find(g => g.key === selectedGroupType)?.theme || "classic";
+  localStorage.setItem("ss_theme_" + data.id, chosenTheme);
+  localStorage.setItem("ss_pattern_" + data.id, "dots");
+  $("createGroupModal").classList.add("hidden");
+  $("createGroupSubmit").disabled = false;
+  enterGroup(data.id, data.code);
+};
+
 function applyTheme(dark) {
   document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
   const tog = $("darkToggle"), knob = $("darkToggleKnob");
@@ -2906,6 +3065,7 @@ $("gearBtn").onclick   = () => {
     $("setBaseCurrency").innerHTML = CURRENCIES.map(c => `<option value="${c}">${c} ${CUR_SYM[c]||""}</option>`).join("");
   $("setBaseCurrency").value = state.baseCurrency || "EUR";
   $("settings").classList.remove("hidden");
+  renderThemePicker();
 };
 $("setClose").onclick       = () => $("settings").classList.add("hidden");
 $("settings").onclick       = e => { if (e.target === $("settings")) $("settings").classList.add("hidden"); };
