@@ -88,6 +88,17 @@
     font-size:13.5px;color:var(--ink-soft);padding:8px;border-radius:7px;cursor:pointer;transition:.12s;}
   .auth-tab[aria-selected="true"],.auth-tab.active{background:var(--ink);color:var(--paper);}
   .auth-err{color:var(--stamp);font-size:12.5px;margin-top:8px;min-height:18px;line-height:1.4;}
+  .pass-wrap{position:relative}
+  .pass-wrap input{width:100%;box-sizing:border-box;padding-right:62px}
+  .pass-wrap button{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:none;
+    color:var(--ink-soft);font-family:'Public Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;
+    padding:4px 6px;border-radius:6px}
+  .pass-wrap button:hover{color:var(--accent)}
+  .agree-row{display:flex;align-items:flex-start;gap:9px;margin-top:12px;font-size:12px;color:var(--ink-soft);
+    line-height:1.45;cursor:pointer;user-select:none}
+  .agree-row input{flex:0 0 auto;width:17px;height:17px;margin-top:1px;accent-color:var(--accent);cursor:pointer}
+  .agree-row button{background:none;border:none;color:var(--accent);font-size:12px;font-weight:600;
+    cursor:pointer;text-decoration:underline;padding:0;font-family:inherit}
   .group-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
   .group-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);
     border-radius:10px;cursor:pointer;background:var(--card);transition:.12s;}
@@ -178,20 +189,20 @@
 
   /* ── settle stubs ── */
   .stub{position:relative;background:var(--card);border:1px solid var(--line);border-radius:10px;
-    padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+    padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .stub::before,.stub::after{content:"";position:absolute;width:14px;height:14px;border-radius:50%;
     background:var(--kraft);border:1px solid var(--line);top:50%;transform:translateY(-50%)}
   .stub::before{left:-8px}.stub::after{right:-8px}
   .stub.mine{border-color:var(--ink);box-shadow:0 0 0 1.5px var(--ink) inset}
+  .stub-main{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:10px}
   .stub .who{font-weight:600;font-size:14.5px;flex:1;min-width:0}
-  .stub .who .arrow{color:var(--stamp);font-weight:700;margin:0 6px}
+  .stub .who .arrow{color:var(--stamp);font-weight:700;margin:0 6px;white-space:nowrap}
   .stub .amt{flex:0 0 auto;font-family:'Space Mono',monospace;font-weight:700;font-size:16px;min-width:72px;text-align:right}
-  .settle-up-btn{flex:0 0 auto;margin-left:12px;border:1px solid var(--accent);background:var(--paper);
-    color:var(--accent);font-size:12px;font-weight:700;border-radius:8px;padding:5px 10px;cursor:pointer;font-family:inherit}
+  .settle-up-btn,.mark-paid{flex:0 0 auto;margin-left:auto;border-radius:8px;cursor:pointer;white-space:nowrap;
+    font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:12.5px;transition:.12s;padding:8px 14px}
+  .settle-up-btn{border:1px solid var(--accent);background:var(--paper);color:var(--accent)}
   .settle-up-btn:hover{background:var(--accent);color:#fff}
-  .mark-paid{flex:0 0 auto;margin-left:12px;border:1px solid var(--green);background:var(--green-soft);
-    color:var(--green);border-radius:8px;padding:8px 0;width:96px;text-align:center;white-space:nowrap;
-    font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:12.5px;cursor:pointer;transition:.12s}
+  .mark-paid{border:1px solid var(--green);background:var(--green-soft);color:var(--green)}
   .mark-paid:hover{background:var(--green);color:#fff}
   .pay-log-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
   .pay-log-row:last-child{border-bottom:none}
@@ -513,7 +524,7 @@
 <div id="authScreen" class="screen">
   <div class="auth-card">
     <div class="auth-logo"><span class="ss">$</span>plit<span class="ss">$</span>tack</div>
-    <div class="auth-sub">Split expenses with your crew</div>
+    <div class="auth-sub">Split expenses with your crew — no math, no awkward reminders.</div>
     <div class="auth-tabs">
       <button type="button" class="auth-tab" data-auth="login" aria-selected="true">Log in</button>
       <button type="button" class="auth-tab" data-auth="signup" aria-selected="false">Sign up</button>
@@ -526,13 +537,16 @@
         <input type="text" id="authNick" placeholder="e.g. Ben (shown to group mates)" autocomplete="nickname" autocapitalize="words">
       </div>
       <label class="fl" for="authPass" style="margin-top:10px">Password</label>
-      <input type="password" id="authPass" placeholder="password" autocomplete="current-password">
+      <div class="pass-wrap">
+        <input type="password" id="authPass" placeholder="at least 6 characters" autocomplete="current-password">
+        <button type="button" id="authPassToggle" aria-label="Show password">Show</button>
+      </div>
       <div class="auth-err" id="authErr"></div>
+      <label id="authAgreeRow" class="agree-row hidden">
+        <input type="checkbox" id="authAgree">
+        <span>I agree to the <button type="button" id="authPrivacyLink">Privacy Policy</button> and to my data being stored on Supabase, with receipts processed by Google Gemini.</span>
+      </label>
       <button class="btn" id="authSubmit" style="margin-top:14px">Log in</button>
-      <p id="authPrivacyNote" class="hidden" style="font-size:11.5px;color:var(--ink-soft);text-align:center;margin-top:10px;line-height:1.5">
-        By signing up you agree that your expense data is stored on Supabase and receipt images may be processed by Google Gemini.
-        <button type="button" id="authPrivacyLink" style="background:none;border:none;color:var(--accent);font-size:11.5px;cursor:pointer;text-decoration:underline;padding:0">Privacy Policy</button>
-      </p>
     </form>
   </div>
 </div>
@@ -640,6 +654,10 @@
       <p class="privacy-p">Questions or deletion requests: open an issue at <a href="https://github.com/benfeldman93/benfeldman93.github.io/issues" target="_blank" rel="noopener" style="color:var(--accent)">github.com/benfeldman93</a> or email benfeldman933@gmail.com.</p>
     </div>
 
+    <div id="privacyAgreeRow" class="hidden" style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn ghost" id="privacyDecline" style="flex:1;margin-top:0">Not now</button>
+      <button class="btn" id="privacyAgree" style="flex:2;margin-top:0">✓ I agree — continue</button>
+    </div>
     <button class="btn" id="privacyDone" style="width:100%;margin-top:8px">Got it</button>
   </div>
 </div>
@@ -811,20 +829,9 @@
       <div id="mySummary"></div>
     </div>
     <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px">
-        <h2 style="margin:0">Who pays who</h2>
-        <div class="seg" id="settleSeg" style="flex-shrink:0">
-          <button type="button" data-smode="direct"    aria-pressed="true">Direct</button>
-          <button type="button" data-smode="optimized" aria-pressed="false">Optimized</button>
-        </div>
-      </div>
-      <p class="sub" id="settleSubtitle">What each person directly owes each other, based on who actually paid for what.</p>
+      <h2 style="margin:0 0 4px">Who pays who</h2>
+      <p class="sub" id="settleSubtitle">The fewest payments that clear every debt. Tap to settle up or mark a payment received.</p>
       <div id="settleList"></div>
-    </div>
-    <div class="card">
-      <h2>Running balance</h2>
-      <p class="sub">A plus means the crew owes that person. A minus means they owe the pot.</p>
-      <div class="net-grid" id="netGrid"></div>
     </div>
     <div class="card hidden" id="settledCard">
       <h2>Settled up</h2>
@@ -957,6 +964,11 @@
       </div>
       <div id="memberList" style="margin-top:12px"></div>
     </div>
+    <div class="card" id="balancesCard">
+      <h2>Where everyone stands</h2>
+      <p class="sub">A plus means the crew owes that person. A minus means they owe the pot. To settle up, head to the home tab.</p>
+      <div class="net-grid" id="netGrid"></div>
+    </div>
   </section>
 
   <nav class="bottom-nav" id="bottomNav">
@@ -1032,7 +1044,7 @@ let ui     = {tab:"settle", selectedCity:null, participants:new Set(), splitMode
               customSplits:{}, pctSplits:{}, currency:"EUR", date:todayISO(), liveRate:null,
               rateLoading:false, manualRate:"", forceManual:false, scanBusy:false, scanError:null,
               lineItems:[], itemScanBusy:false, itemScanError:null, scanWarning:null,
-              receiptB64:null, receiptMime:null, histView:"active", histFilter:"all", histPaidBy:"", histSearch:"", coverages:{}, payerId:null, settleMode:"direct",
+              receiptB64:null, receiptMime:null, histView:"active", histFilter:"all", histPaidBy:"", histSearch:"", coverages:{}, payerId:null,
               category:"", notes:""};
 let GROUP_ID = null, GROUP_CODE = null, meId = null, editingExpenseId = null;
 let rateReqId = 0, partsInit = false, store = null;
@@ -1059,7 +1071,11 @@ function sanitizeCode(s){ return (s||"").toUpperCase().replace(/[^A-Z0-9_-]/g,""
    ══════════════════════════════════════════════════════════════ */
 let authMode = "login";
 
-function openPrivacy() {
+/* when opened from the signup flow we show "agree / not now" buttons;
+   from elsewhere (settings, the link), just an informational "Got it". */
+function openPrivacy(forSignup) {
+  $("privacyAgreeRow").classList.toggle("hidden", !forSignup);
+  $("privacyDone").classList.toggle("hidden", !!forSignup);
   $("privacyModal").classList.remove("hidden");
 }
 function closePrivacy() {
@@ -1068,8 +1084,23 @@ function closePrivacy() {
 $("privacyClose").onclick = closePrivacy;
 $("privacyDone").onclick  = closePrivacy;
 $("privacyModal").onclick = e => { if (e.target === $("privacyModal")) closePrivacy(); };
-$("authPrivacyLink").onclick = openPrivacy;
-$("openPrivacyFromSettings").onclick = openPrivacy;
+$("authPrivacyLink").onclick = () => openPrivacy(true);
+$("openPrivacyFromSettings").onclick = () => openPrivacy(false);
+$("privacyDecline").onclick = closePrivacy;
+$("privacyAgree").onclick = () => {
+  $("authAgree").checked = true;
+  $("authErr").textContent = "";
+  closePrivacy();
+  doAuth();           // continue the signup the user was attempting
+};
+
+/* password show/hide */
+$("authPassToggle").onclick = () => {
+  const inp = $("authPass"), btn = $("authPassToggle");
+  const show = inp.type === "password";
+  inp.type = show ? "text" : "password";
+  btn.textContent = show ? "Hide" : "Show";
+};
 
 function setAuthMode(mode) {
   authMode = mode;
@@ -1082,17 +1113,25 @@ function setAuthMode(mode) {
   $("authPass").autocomplete  = mode === "login" ? "current-password" : "new-password";
   $("authErr").textContent    = "";
   $("nickWrap").classList.toggle("hidden", mode !== "signup");
-  $("authPrivacyNote").classList.toggle("hidden", mode !== "signup");
+  $("authAgreeRow").classList.toggle("hidden", mode !== "signup");
+  if (mode !== "signup") $("authAgree").checked = false;
 }
 document.querySelectorAll(".auth-tab").forEach(b => b.onclick = () => setAuthMode(b.dataset.auth));
 
-$("authForm").onsubmit = async e => {
-  e.preventDefault();
+$("authForm").onsubmit = e => { e.preventDefault(); doAuth(); };
+
+async function doAuth() {
   const username = $("authUser").value.trim().toLowerCase().replace(/\s+/g,"_");
   const password = $("authPass").value;
   $("authErr").textContent = "";
   if (!username)          { $("authErr").textContent = "Enter a username."; return; }
   if (password.length < 6){ $("authErr").textContent = "Password must be at least 6 characters."; return; }
+
+  /* new users must accept the privacy policy — pop it up so they can read + agree */
+  if (authMode === "signup" && !$("authAgree").checked) {
+    openPrivacy(true);
+    return;
+  }
 
   if (!sb) {
     $("authErr").textContent = "Supabase isn't connected yet — open index.html and replace YOUR_SUPABASE_URL and YOUR_SUPABASE_ANON_KEY with your project credentials.";
@@ -1127,7 +1166,7 @@ $("authForm").onsubmit = async e => {
     $("authSubmit").disabled = false;
     $("authSubmit").textContent = authMode === "login" ? "Log in" : "Create account";
   }
-};
+}
 
 function friendlyAuthErr(err) {
   const m = (err.message || "").toLowerCase();
@@ -1758,38 +1797,6 @@ function settlements() {
   return out;
 }
 
-function pairBalances() {
-  /* raw[creditor][debtor] = amount debtor owes creditor from expenses */
-  const raw = {};
-  const add = (creditor, debtor, amt) => {
-    if (!raw[creditor]) raw[creditor] = {};
-    raw[creditor][debtor] = (raw[creditor][debtor] || 0) + amt;
-  };
-  state.expenses.forEach(exp => {
-    exp.participants.forEach(pid => {
-      if (pid === exp.payer) return;
-      const share = shareFor(exp, pid);
-      if (share > 0) add(exp.payer, pid, share);
-    });
-  });
-  (state.payments || []).forEach(p => add(p.to, p.from, -p.amount));
-
-  /* net each pair to one direction */
-  const pairs = [], seen = new Set();
-  state.members.forEach(a => state.members.forEach(b => {
-    if (a.id === b.id) return;
-    const key = [a.id, b.id].sort().join("|");
-    if (seen.has(key)) return;
-    seen.add(key);
-    const ab = raw[a.id]?.[b.id] || 0;  /* b owes a */
-    const ba = raw[b.id]?.[a.id] || 0;  /* a owes b */
-    const net = round2(ab - ba);
-    if      (net >  0.009) pairs.push({from: b.id, to: a.id, amt:  net});
-    else if (net < -0.009) pairs.push({from: a.id, to: b.id, amt: -net});
-  }));
-  return pairs;
-}
-
 /* ══════════════════════════════════════════════════════════════
    RENDER
    ══════════════════════════════════════════════════════════════ */
@@ -1827,33 +1834,23 @@ function renderMyCard() {
   else if(net<-0.009) head=`<div class="my-head neg">-${fmtUSD(-net)}</div><div class="my-sub">you owe the pot, net</div>`;
   else             head=`<div class="my-head zero">$0.00</div><div class="my-sub">you're all square</div>`;
 
-  const s=pairBalances();
+  const s=settlements();
   const owed=s.filter(p=>p.to===meId), owe=s.filter(p=>p.from===meId);
   const lines = [
-    ...owed.map(p=>`<div class="my-line"><span class="t">${escHtml(nameOf(p.from))} owes you</span><span class="v in">${fmtUSD(p.amt)}</span><button class="mark-paid" data-from="${p.from}" data-to="${p.to}" data-amt="${p.amt}">Mark paid</button></div>`),
-    ...owe.map( p=>`<div class="my-line"><span class="t">You owe ${escHtml(nameOf(p.to))}</span><span class="v out">${fmtUSD(p.amt)}</span><span style="font-size:11px;color:var(--ink-soft);flex:0 0 auto;margin-left:12px;width:96px;text-align:center">${escHtml(nameOf(p.to))} confirms</span></div>`)
+    ...owe.map( p=>`<div class="my-line"><span class="t">You owe ${escHtml(nameOf(p.to))}</span><span class="v out">${fmtUSD(p.amt)}</span></div>`),
+    ...owed.map(p=>`<div class="my-line"><span class="t">${escHtml(nameOf(p.from))} owes you</span><span class="v in">${fmtUSD(p.amt)}</span></div>`)
   ].join("");
-  body.innerHTML = strip + head + (lines || `<div class="my-sub">Nothing to settle for you right now.</div>`);
-  body.querySelectorAll(".mark-paid").forEach(b => b.onclick=()=>markPaid(b.dataset.from,b.dataset.to,parseFloat(b.dataset.amt)));
+  const hint = lines ? `<div class="my-sub" style="margin:8px 0 0">Use “Who pays who” below to settle up.</div>` : "";
+  body.innerHTML = strip + head + (lines || `<div class="my-sub">Nothing to settle for you right now.</div>`) + hint;
 }
 
 function renderSettle() {
   const el=$("settleList");
 
-  /* toggle buttons */
-  $("settleSeg").querySelectorAll("[data-smode]").forEach(b => {
-    b.setAttribute("aria-pressed", ui.settleMode===b.dataset.smode);
-    b.onclick = () => { ui.settleMode=b.dataset.smode; renderSettle(); };
-  });
-  const optimized = ui.settleMode==="optimized";
-  $("settleSubtitle").textContent = optimized
-    ? "Fewest possible payments to clear every debt — may route through people who didn't share an expense."
-    : "What each person directly owes each other, based on who actually paid for what.";
-
   if (state.members.length<2)    { el.innerHTML=empty("👥","Only you here","Share the invite link in the Crew tab to add your crew."); renderSettled(); return; }
   if (state.expenses.length===0) { el.innerHTML=empty("🧾","Nothing to settle yet","Log a few expenses and the payments show up here."); renderSettled(); return; }
 
-  const s = optimized ? settlements() : pairBalances();
+  const s = settlements();
   if (s.length===0) { el.innerHTML=`<div class="allset"><span class="em">🎉</span><div><div class="t">All square!</div><div class="x">Everyone's even — enjoy the trip!</div></div></div>`; renderSettled(); return; }
 
   el.innerHTML = s.map(p => {
@@ -1866,36 +1863,13 @@ function renderSettle() {
       actionBtn = `<button class="settle-up-btn" data-from="${p.from}" data-to="${p.to}" data-amt="${p.amt}">Settle up</button>`;
     else if (p.to === meId)
       actionBtn = `<button class="mark-paid" data-from="${p.from}" data-to="${p.to}" data-amt="${p.amt}">Mark paid</button>`;
-    return `<div class="stub${mine}"><span class="who">${who}</span><span class="amt">${fmtUSD(p.amt)}</span>${actionBtn}</div>`;
+    return `<div class="stub${mine}"><div class="stub-main"><span class="who">${who}</span><span class="amt">${fmtUSD(p.amt)}</span></div>${actionBtn}</div>`;
   }).join("");
   el.querySelectorAll(".mark-paid").forEach(b => b.onclick = () => markPaid(b.dataset.from, b.dataset.to, parseFloat(b.dataset.amt), false));
   el.querySelectorAll(".settle-up-btn").forEach(b => b.onclick = () => markPaid(b.dataset.from, b.dataset.to, parseFloat(b.dataset.amt), true));
   renderSettled();
 }
 
-function renderPairBalances() {
-  const el = $("pairList");
-  if (state.members.length < 2 || state.expenses.length === 0) { el.innerHTML = ""; return; }
-  const pairs = pairBalances();
-  if (pairs.length === 0) { el.innerHTML = `<div class="allset"><span class="em">✅</span><div><div class="t">All square</div><div class="x">Nobody owes anybody.</div></div></div>`; return; }
-
-  /* group by the person who is owed, so it reads "X owes: A $10, B $5" */
-  const byCreditor = {};
-  pairs.forEach(p => {
-    if (!byCreditor[p.to]) byCreditor[p.to] = [];
-    byCreditor[p.to].push(p);
-  });
-
-  el.innerHTML = Object.entries(byCreditor).map(([creditorId, ps]) => {
-    const rows = ps.map(p => {
-      const mine = (p.from === meId || p.to === meId) ? " mine" : "";
-      const fromName = p.from === meId ? "You" : escHtml(nameOf(p.from));
-      const toName   = p.to   === meId ? "you" : escHtml(nameOf(p.to));
-      return `<div class="stub${mine}"><span class="who">${fromName}<span class="arrow">owes →</span>${toName}</span><span class="amt">${fmtUSD(p.amt)}</span></div>`;
-    }).join("");
-    return rows;
-  }).join("");
-}
 
 function renderSettled() {
   const el=$("settledList"); if (!el) return;
