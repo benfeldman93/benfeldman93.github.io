@@ -1687,7 +1687,10 @@ async function scanScreenshot(file) {
     ui.scanBusy=false; ui.scanError=null; showScan();
     await refreshRate(); renderAddForm();
   } catch(e) {
-    console.error(e); ui.scanBusy=false; ui.scanError="Couldn't read that one — enter the amount below."; showScan();
+    console.error("Receipt scan failed:", e);
+    ui.scanBusy=false;
+    ui.scanError = "Couldn't read that one: " + (e?.message || "unknown error") + ". Try a clearer photo or enter manually.";
+    showScan();
   }
 }
 async function scanBillItems(file) {
@@ -1700,7 +1703,10 @@ async function scanBillItems(file) {
     ui.itemScanBusy=false; renderAddForm();
     await refreshRate();
   } catch(e) {
-    console.error(e); ui.itemScanBusy=false; ui.itemScanError="Couldn't read that bill — add items manually below."; renderItemSplit();
+    console.error("Bill scan failed:", e);
+    ui.itemScanBusy=false;
+    ui.itemScanError = "Couldn't read that bill: " + (e?.message || "unknown error") + ". Try again or add items manually.";
+    renderItemSplit();
   }
 }
 async function uploadReceipt(expenseId) {

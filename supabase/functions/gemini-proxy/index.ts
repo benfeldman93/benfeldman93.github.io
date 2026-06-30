@@ -55,10 +55,18 @@ Deno.serve(async (req) => {
 
     if (!resp.ok) {
       const msg = data?.error?.message || `Gemini API error ${resp.status}`;
-      return json({ error: msg });
+      return json({ error: `Gemini ${resp.status}: ${msg}` });
     }
 
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
+    const candidate = data?.candidates?.[0];
+    if (!candidate) {
+      const blocked = data?.promptFeedback?.blockReason;
+      return json({ error: blocked ? `Blocked by Gemini: ${blocked}` : "Gemini returned no candidates." });
+    }
+    if (candidate.finishReason && candidate.finishReason !== "STOP" && candidate.finishReason !== "MAX_TOKENS") {
+      return json({ error: `Gemini stopped early (${candidate.finishReason}). Try a clearer image.` });
+    }
+    const text = candidate?.content?.parts?.[0]?.text ?? "{}";
     return json({ text });
   } catch (e) {
     return json({ error: String(e) });
