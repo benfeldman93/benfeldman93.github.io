@@ -544,7 +544,7 @@
       <div class="auth-err" id="authErr"></div>
       <label id="authAgreeRow" class="agree-row hidden">
         <input type="checkbox" id="authAgree">
-        <span>I agree to the <button type="button" id="authPrivacyLink">Privacy Policy</button> and to my data being stored on Supabase, with receipts processed by Google Gemini.</span>
+        <span>I agree to the <button type="button" id="authPrivacyLink">Privacy Policy</button> and to my data being stored on Supabase, with receipts processed by Anthropic's Claude.</span>
       </label>
       <button class="btn" id="authSubmit" style="margin-top:14px">Log in</button>
     </form>
@@ -613,7 +613,7 @@
 
     <div class="privacy-section">
       <div class="privacy-h">Receipt scanning</div>
-      <p class="privacy-p">When you scan a receipt, the image is sent to <strong>Google Gemini</strong> (Google's AI service) to extract the totals and line items. Google receives the image to process it. We do not store the image with Google — their API processes it and returns the text. Google's privacy policy governs how they handle API data: <a href="https://policies.google.com/privacy" target="_blank" rel="noopener" style="color:var(--accent)">policies.google.com/privacy</a>.</p>
+      <p class="privacy-p">When you scan a receipt, the image is sent to <strong>Anthropic's Claude</strong> (an AI service) to extract the totals and line items. Anthropic receives the image to process it and returns the text. Per Anthropic's API terms, data sent through the API is not used to train their models. Anthropic's privacy policy governs how they handle API data: <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener" style="color:var(--accent)">anthropic.com/legal/privacy</a>.</p>
       <p class="privacy-p">If you'd prefer not to use AI scanning, you can always enter amounts manually.</p>
     </div>
 
@@ -705,7 +705,7 @@
     </div>
     <div class="modecard" style="margin-top:14px">
       <div class="h">Privacy &amp; data</div>
-      <p>Your expense data is stored on Supabase. Receipt images are processed by Google Gemini for scanning. We don't sell or share your data.</p>
+      <p>Your expense data is stored on Supabase. Receipt images are processed by Anthropic's Claude for scanning. We don't sell or share your data.</p>
       <button class="btn ghost" id="openPrivacyFromSettings" style="width:100%;margin-top:8px;font-size:13px">📄 Read full Privacy Policy</button>
       <button class="btn ghost" id="leaveGroupBtn" style="width:100%;margin-top:8px;font-size:13px;color:var(--stamp);border-color:var(--stamp)">🚪 Leave this group</button>
     </div>
@@ -1645,20 +1645,32 @@ function effectiveRate() {
 
 /* ══════════════════════════════════════════════════════════════
    RECEIPT SCAN  —  calls the Supabase Edge Function "anthropic-proxy"
-   which holds the API key server-side. The browser never sees the key.
+   which holds the Claude API key server-side. The browser never sees the key.
    ══════════════════════════════════════════════════════════════ */
-async function geminiScan(b64, mime, prompt) {
+async function claudeScan(b64, mime, prompt) {
   if (!sb) throw new Error("Not connected.");
-  const { data, error } = await sb.functions.invoke("gemini-proxy", {
-    body: { image_base64: b64, image_mime_type: mime, prompt }
+  const { data, error } = await sb.functions.invoke("anthropic-proxy", {
+    body: {
+      model: "claude-sonnet-4-6",
+      max_tokens: 1500,
+      messages: [{
+        role: "user",
+        content: [
+          { type: "image", source: { type: "base64", media_type: mime || "image/jpeg", data: b64 } },
+          { type: "text", text: prompt }
+        ]
+      }]
+    }
   });
   if (error) {
     let msg = error.message || "Scan service error.";
-    try { const ctx = await error.context?.json?.(); if (ctx?.error) msg = ctx.error; } catch(_){}
+    try { const ctx = await error.context?.json?.(); if (ctx?.error?.message) msg = ctx.error.message; } catch(_){}
     throw new Error(msg);
   }
-  if (data && data.error) throw new Error(data.error);
-  return data.text || "{}";
+  if (data && data.error) throw new Error(data.error.message || String(data.error));
+  const text = data?.content?.[0]?.text;
+  if (!text) throw new Error("Empty response from the scan service.");
+  return text;
 }
 function compressImage(file, maxDim, quality) {
   return new Promise((res,rej) => {
@@ -1694,7 +1706,7 @@ Rules:
 - "description": 2–4 words summarising what was purchased.
 - If the image is too blurry, cropped, or unreadable, set "unclear":true and return nulls/empty arrays.`;
 
-  const text = await geminiScan(b64, media, prompt);
+  const text = await claudeScan(b64, media, prompt);
   return JSON.parse(text.replace(/```json|```/g, "").trim());
 }
 function applyScan(parsed) {
