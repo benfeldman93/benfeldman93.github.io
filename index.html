@@ -272,6 +272,25 @@
   .chat-send{flex:0 0 auto;width:42px;height:42px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:17px;cursor:pointer}
   .chat-send:disabled{opacity:.4;cursor:default}
 
+  /* ── itinerary ── */
+  .itin-day{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:13px;color:var(--ink-soft);
+    text-transform:uppercase;letter-spacing:.05em;margin:16px 0 4px}
+  .itin-day:first-child{margin-top:8px}
+  .itin-item{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--line);border-radius:11px;
+    padding:11px 12px;margin-top:8px;background:var(--card);touch-action:pan-y}
+  .itin-item.dragging{opacity:.5;border-color:var(--accent);border-style:dashed}
+  .itin-item.drag-over{border-top:2px solid var(--accent)}
+  .itin-grip{flex:0 0 auto;color:var(--ink-soft);font-size:18px;cursor:grab;padding:2px 2px;line-height:1;
+    touch-action:none;user-select:none;-webkit-user-select:none}
+  .itin-grip:active{cursor:grabbing}
+  .itin-time{flex:0 0 auto;font-family:'Space Mono',monospace;font-weight:700;font-size:12.5px;color:var(--accent);
+    width:52px;text-align:right;padding-top:1px}
+  .itin-body{flex:1;min-width:0;cursor:pointer}
+  .itin-title{font-weight:700;font-size:14.5px;color:var(--ink);word-break:break-word}
+  .itin-loc{font-size:12px;color:var(--ink-soft);margin-top:2px}
+  .itin-note{font-size:12.5px;color:var(--ink-soft);margin-top:4px;white-space:pre-wrap;word-break:break-word}
+  .itin-empty{text-align:center;padding:18px 10px;color:var(--ink-soft);font-size:13px}
+
   /* ── stats ── */
   .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
   .stat-tile{background:var(--kraft);border-radius:12px;padding:14px;text-align:center}
@@ -834,6 +853,32 @@
   </div>
 </div>
 
+<!-- ═══════════════════ ITINERARY MODAL ═══════════════════ -->
+<div class="overlay hidden" id="itinModal">
+  <div class="sheet" style="max-height:90vh;overflow-y:auto">
+    <button class="closex" id="itinClose">×</button>
+    <h2 id="itinModalTitle">Add to itinerary</h2>
+
+    <label class="fl">What</label>
+    <input type="text" id="itinTitle" placeholder="e.g. Louvre, dinner at Septime, train to Nice">
+
+    <div class="row2" style="margin-top:10px">
+      <div><label class="fl">Day</label><input type="date" id="itinDay"></div>
+      <div><label class="fl">Time</label><input type="time" id="itinTime"></div>
+    </div>
+
+    <label class="fl" style="margin-top:10px">Location <span style="font-weight:400;text-transform:none">(optional)</span></label>
+    <input type="text" id="itinLocation" placeholder="Address, meeting point…">
+
+    <label class="fl" style="margin-top:10px">Notes <span style="font-weight:400;text-transform:none">(optional)</span></label>
+    <textarea id="itinNotes" style="resize:none;height:56px" placeholder="Tickets booked, who's coming, what to bring…"></textarea>
+
+    <div class="auth-err" id="itinErr"></div>
+    <button class="btn" id="itinSave" style="margin-top:10px;width:100%">Save</button>
+    <button class="btn ghost" id="itinDelete" style="margin-top:8px;width:100%;display:none;color:var(--stamp)">Delete</button>
+  </div>
+</div>
+
 <!-- ═══════════════════ PRIVACY POLICY ═══════════════════ -->
 <div class="overlay hidden" id="privacyModal">
   <div class="sheet" style="max-height:85vh;overflow-y:auto">
@@ -1247,13 +1292,12 @@
 
   <section id="panel-itinerary" class="hidden">
     <div class="card">
-      <h2>Itinerary</h2>
-      <p class="sub">The day-by-day plan. Drag to reorder as things change.</p>
-      <div class="area-stub">
-        <div class="area-stub-icon">🗺️</div>
-        <div class="area-stub-t">Your plans live here</div>
-        <div class="area-stub-x">Add stops and activities per day, then drag them around. Everyone in the group stays in sync.</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <h2 style="margin:0">Itinerary</h2>
+        <button class="btn" id="addItinBtn" style="width:auto;margin:0;padding:8px 15px">+ Add</button>
       </div>
+      <p class="sub" style="margin-top:6px">The day-by-day plan. Drag the ⠿ handle to reorder — everyone stays in sync.</p>
+      <div id="itinList"></div>
     </div>
   </section>
 
@@ -1631,14 +1675,15 @@ function makeSupabaseStore(groupId) {
   let channel = null;
 
   async function fetchState() {
-    const [membersRes, expRes, payRes, grpRes, fxRes, todoRes, ticketsRes] = await Promise.all([
+    const [membersRes, expRes, payRes, grpRes, fxRes, todoRes, ticketsRes, itinRes] = await Promise.all([
       sb.from("group_members").select("user_id, created_at").eq("group_id", groupId).order("created_at"),
       sb.from("expenses").select("*").eq("group_id", groupId).order("created_at"),
       sb.from("payments").select("*").eq("group_id", groupId).order("created_at"),
       sb.from("groups").select("name, trip_start, trip_end, base_currency, custom_cities, budget").eq("id", groupId).single(),
       sb.from("fx_cache").select("*"),
       sb.from("todos").select("*").eq("group_id", groupId).order("created_at"),
-      sb.from("tickets").select("*, ticket_passengers(user_id)").eq("group_id", groupId).order("depart_date", {nullsFirst:false})
+      sb.from("tickets").select("*, ticket_passengers(user_id)").eq("group_id", groupId).order("depart_date", {nullsFirst:false}),
+      sb.from("itinerary_items").select("*").eq("group_id", groupId).order("position", {ascending:true})
     ]);
     if (membersRes.error) console.error("members query:", membersRes.error);
 
@@ -1734,6 +1779,19 @@ function makeSupabaseStore(groupId) {
       ts:            new Date(t.created_at).getTime()
     }));
 
+    if (itinRes?.error) console.error("itinerary query:", itinRes.error);
+    const itinerary = (itinRes?.data || []).map(it => ({
+      id:        it.id,
+      title:     it.title || "",
+      day:       it.day || "",
+      time:      it.time || "",
+      location:  it.location || "",
+      notes:     it.notes || "",
+      position:  Number(it.position)||0,
+      createdBy: it.created_by,
+      ts:        new Date(it.created_at).getTime()
+    }));
+
     return {
       tripName:     grpRes.data?.name || "SplitStack",
       tripStart:    grpRes.data?.trip_start || "",
@@ -1741,7 +1799,7 @@ function makeSupabaseStore(groupId) {
       baseCurrency: grpRes.data?.base_currency || "EUR",
       customCities: grpRes.data?.custom_cities || [],
       budget:       grpRes.data?.budget || {},
-      members, expenses, deletedExpenses, payments, fxCache, todos, tickets
+      members, expenses, deletedExpenses, payments, fxCache, todos, tickets, itinerary
     };
   }
 
@@ -1756,6 +1814,7 @@ function makeSupabaseStore(groupId) {
       .on("postgres_changes", {event:"*", schema:"public", table:"todos",         filter:`group_id=eq.${groupId}`}, refresh)
       .on("postgres_changes", {event:"*", schema:"public", table:"tickets",       filter:`group_id=eq.${groupId}`}, refresh)
       .on("postgres_changes", {event:"*", schema:"public", table:"ticket_passengers"}, refresh)
+      .on("postgres_changes", {event:"*", schema:"public", table:"itinerary_items", filter:`group_id=eq.${groupId}`}, refresh)
       .subscribe(status => setSync(status === "SUBSCRIBED" ? "synced" : "offline"));
   }
 
@@ -1863,6 +1922,41 @@ function makeSupabaseStore(groupId) {
     async delTicket(id) {
       const {error} = await sb.from("tickets").delete().eq("id", id);
       if (error) { alert("Could not delete ticket: " + error.message); return; }
+      if (sub) sub(await fetchState());
+      flashSaved();
+    },
+
+    async addItin(id, it, position) {
+      const {error} = await sb.from("itinerary_items").insert({
+        id, group_id: groupId, created_by: meId,
+        title: it.title||null, day: it.day||null, time: it.time||null,
+        location: it.location||null, notes: it.notes||null, position
+      });
+      if (error) { alert("Error saving item: " + error.message); return false; }
+      if (sub) sub(await fetchState());
+      flashSaved();
+      return true;
+    },
+    async updateItin(id, it) {
+      const {error} = await sb.from("itinerary_items").update({
+        title: it.title||null, day: it.day||null, time: it.time||null,
+        location: it.location||null, notes: it.notes||null
+      }).eq("id", id);
+      if (error) { alert("Error saving item: " + error.message); return false; }
+      if (sub) sub(await fetchState());
+      flashSaved();
+      return true;
+    },
+    async delItin(id) {
+      const {error} = await sb.from("itinerary_items").delete().eq("id", id);
+      if (error) { alert("Could not delete item: " + error.message); return; }
+      if (sub) sub(await fetchState());
+      flashSaved();
+    },
+    async reorderItin(orderedIds) {
+      /* write new positions (spaced by 10) for the given order */
+      await Promise.all(orderedIds.map((id, i) =>
+        sb.from("itinerary_items").update({position: (i+1)*10}).eq("id", id)));
       if (sub) sub(await fetchState());
       flashSaved();
     },
@@ -3270,8 +3364,121 @@ function persistBudgetSoon() {
   }, 700);
 }
 
-/* itinerary render — full implementation added with the Itinerary feature */
-function renderItinerary() {}
+/* ══════════════════════════════════════════════════════════════
+   ITINERARY  (shared per group, drag to reorder)
+   ══════════════════════════════════════════════════════════════ */
+let itinEditId = null;
+let itinDragEl = null;
+
+function fmtItinDay(d) {
+  if (!d) return "Unscheduled";
+  const dt = new Date(d + "T00:00:00");
+  return isNaN(dt) ? d : dt.toLocaleDateString(undefined, {weekday:"long", month:"short", day:"numeric"});
+}
+
+function renderItinerary() {
+  const el = $("itinList"); if (!el) return;
+  const items = [...(state.itinerary||[])].sort((a,b) => (a.position||0)-(b.position||0));
+  if (!items.length) {
+    el.innerHTML = `<div class="itin-empty">Nothing planned yet. Tap <strong>+ Add</strong> to start the itinerary.</div>`;
+    return;
+  }
+  let html = "", lastDay = " ";
+  items.forEach(it => {
+    const dayKey = it.day || "";
+    if (dayKey !== lastDay) { html += `<div class="itin-day">${escHtml(fmtItinDay(it.day))}</div>`; lastDay = dayKey; }
+    html += `<div class="itin-item" data-itin="${it.id}">
+      <span class="itin-grip" data-grip title="Drag to reorder">⠿</span>
+      <span class="itin-time">${it.time?escHtml(fmtTicketTime(it.time)):""}</span>
+      <div class="itin-body" data-itin-body="${it.id}">
+        <div class="itin-title">${escHtml(it.title||"Untitled")}</div>
+        ${it.location?`<div class="itin-loc">📍 ${escHtml(it.location)}</div>`:""}
+        ${it.notes?`<div class="itin-note">${escHtml(it.notes)}</div>`:""}
+      </div>
+    </div>`;
+  });
+  el.innerHTML = html;
+  el.querySelectorAll("[data-itin-body]").forEach(b => b.onclick = () => openItinModal(b.dataset.itinBody));
+  el.querySelectorAll(".itin-item").forEach(item => {
+    const grip = item.querySelector("[data-grip]");
+    grip.onpointerdown = e => startItinDrag(e, item);
+  });
+}
+
+function startItinDrag(e, item) {
+  e.preventDefault();
+  itinDragEl = item;
+  item.classList.add("dragging");
+  const container = $("itinList");
+  const move = ev => {
+    const y = ev.clientY;
+    const others = [...container.querySelectorAll(".itin-item:not(.dragging)")];
+    let before = null;
+    for (const o of others) {
+      const r = o.getBoundingClientRect();
+      if (y < r.top + r.height/2) { before = o; break; }
+    }
+    if (before) container.insertBefore(itinDragEl, before);
+    else container.appendChild(itinDragEl);
+  };
+  const up = async () => {
+    document.removeEventListener("pointermove", move);
+    document.removeEventListener("pointerup", up);
+    if (!itinDragEl) return;
+    itinDragEl.classList.remove("dragging");
+    const orderedIds = [...container.querySelectorAll(".itin-item")].map(el => el.dataset.itin);
+    itinDragEl = null;
+    if (store) await store.reorderItin(orderedIds);
+  };
+  document.addEventListener("pointermove", move);
+  document.addEventListener("pointerup", up);
+}
+
+function openItinModal(id) {
+  $("itinErr").textContent = "";
+  if (id) {
+    const it = (state.itinerary||[]).find(x => x.id === id); if (!it) return;
+    itinEditId = id;
+    $("itinModalTitle").textContent = "Edit item";
+    $("itinTitle").value = it.title||"";
+    $("itinDay").value = it.day||"";
+    $("itinTime").value = it.time||"";
+    $("itinLocation").value = it.location||"";
+    $("itinNotes").value = it.notes||"";
+    $("itinDelete").style.display = "";
+  } else {
+    itinEditId = null;
+    $("itinModalTitle").textContent = "Add to itinerary";
+    $("itinTitle").value = ""; $("itinDay").value = state.tripStart||""; $("itinTime").value = "";
+    $("itinLocation").value = ""; $("itinNotes").value = "";
+    $("itinDelete").style.display = "none";
+  }
+  $("itinModal").classList.remove("hidden");
+}
+function closeItinModal() { $("itinModal").classList.add("hidden"); }
+
+async function saveItin() {
+  if (!store) return;
+  const title = $("itinTitle").value.trim();
+  if (!title) { $("itinErr").textContent = "Add a title."; return; }
+  const it = {
+    title, day: $("itinDay").value, time: $("itinTime").value,
+    location: $("itinLocation").value.trim(), notes: $("itinNotes").value.trim()
+  };
+  let ok;
+  if (itinEditId) ok = await store.updateItin(itinEditId, it);
+  else {
+    const maxPos = Math.max(0, ...(state.itinerary||[]).map(x => x.position||0));
+    ok = await store.addItin(uid(), it, maxPos + 10);
+  }
+  if (ok) closeItinModal();
+}
+async function deleteItin() {
+  if (!itinEditId) return;
+  if (!confirm("Delete this item?")) return;
+  await store.delItin(itinEditId);
+  closeItinModal();
+}
 
 /* ══════════════════════════════════════════════════════════════
    CHAT  (group messages, realtime)
@@ -4326,6 +4533,13 @@ $("chatClose").onclick = closeChat;
 $("chatSend").onclick  = sendChatMessage;
 $("chatInput").oninput = autoGrowChat;
 $("chatInput").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } };
+
+/* ── itinerary wiring ── */
+$("addItinBtn").onclick = () => openItinModal(null);
+$("itinClose").onclick  = closeItinModal;
+$("itinModal").onclick  = e => { if (e.target === $("itinModal")) closeItinModal(); };
+$("itinSave").onclick   = saveItin;
+$("itinDelete").onclick = deleteItin;
 $("darkToggle").onclick = () => { darkMode = !darkMode; applyTheme(darkMode); };
 $("addBtn").onclick    = addExpense;
 $("cancelEditBtn").onclick = cancelEdit;
