@@ -221,6 +221,31 @@
   .sv-eta-total b{font-family:'Space Mono',monospace}
   .sv-curve-wrap{margin-top:8px;overflow-x:auto}
 
+  /* ── budget ── */
+  .bg-total{display:flex;align-items:baseline;gap:8px;margin:8px 0 2px}
+  .bg-total .big{font-family:'Space Mono',monospace;font-weight:700;font-size:26px;color:var(--ink)}
+  .bg-total .of{font-size:13px;color:var(--ink-soft)}
+  .bg-bar{height:12px;border-radius:6px;background:var(--kraft);overflow:hidden;margin-top:10px}
+  .bg-bar .fill{height:100%;border-radius:6px;background:var(--green);transition:width .3s}
+  .bg-bar .fill.warn{background:#E0A21B}
+  .bg-bar .fill.over{background:var(--stamp)}
+  .bg-meta{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);margin-top:6px}
+  .bg-set{display:flex;align-items:center;gap:8px;margin-top:4px}
+  .bg-set .amt-input-wrap{flex:1}
+  .bg-cat{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .bg-cat:last-child{border-bottom:none}
+  .bg-cat .ic{font-size:18px;flex:0 0 auto;width:26px;text-align:center}
+  .bg-cat .col{flex:1;min-width:0}
+  .bg-cat .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .bg-cat .nm{font-weight:600;font-size:14px;color:var(--ink)}
+  .bg-cat .sp{font-family:'Space Mono',monospace;font-size:12px;color:var(--ink-soft);white-space:nowrap}
+  .bg-cat .sp b{color:var(--ink)}
+  .bg-cat .minibar{height:7px;border-radius:4px;background:var(--kraft);overflow:hidden;margin-top:5px}
+  .bg-cat .minibar .f{height:100%;border-radius:4px;background:var(--accent)}
+  .bg-cat .minibar .f.over{background:var(--stamp)}
+  .bg-cat .capin{flex:0 0 auto;width:78px}
+  .bg-cat .capin input{width:100%;padding:6px 8px;font-family:'Space Mono',monospace;font-size:12.5px;text-align:right}
+
   /* ── stats ── */
   .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
   .stat-tile{background:var(--kraft);border-radius:12px;padding:14px;text-align:center}
@@ -1170,15 +1195,8 @@
   </section>
 
   <section id="panel-budget" class="hidden">
-    <div class="card">
-      <h2>Trip budget</h2>
-      <p class="sub">Plan and track spending caps for this trip — lodging, food, activities, transit. Coming together next.</p>
-      <div class="area-stub">
-        <div class="area-stub-icon">📊</div>
-        <div class="area-stub-t">Budgeting lives here</div>
-        <div class="area-stub-x">Set a total trip budget and per-category caps, then watch it fill up as expenses land in Payments.</div>
-      </div>
-    </div>
+    <div class="card" id="budgetTotalCard"></div>
+    <div class="card" id="budgetCatCard"></div>
   </section>
 
   <section id="panel-savings" class="hidden">
@@ -1285,7 +1303,7 @@ const CATEGORIES   = [
 ];
 
 /* ══ app state ══ */
-let state  = {tripName:"SplitStack", tripStart:"", tripEnd:"", baseCurrency:"EUR", members:[], expenses:[], deletedExpenses:[], payments:[], fxCache:{}, customCities:[], todos:[], tickets:[]};
+let state  = {tripName:"SplitStack", tripStart:"", tripEnd:"", baseCurrency:"EUR", members:[], expenses:[], deletedExpenses:[], payments:[], fxCache:{}, customCities:[], todos:[], tickets:[], budget:{}, itinerary:[]};
 let ui     = {area:"payments", tab:"settle", selectedCity:null, participants:new Set(), splitMode:"even",
               customSplits:{}, pctSplits:{}, currency:"EUR", date:todayISO(), liveRate:null,
               rateLoading:false, manualRate:"", forceManual:false, scanBusy:false, scanError:null,
@@ -1576,7 +1594,7 @@ function makeSupabaseStore(groupId) {
       sb.from("group_members").select("user_id, created_at").eq("group_id", groupId).order("created_at"),
       sb.from("expenses").select("*").eq("group_id", groupId).order("created_at"),
       sb.from("payments").select("*").eq("group_id", groupId).order("created_at"),
-      sb.from("groups").select("name, trip_start, trip_end, base_currency, custom_cities").eq("id", groupId).single(),
+      sb.from("groups").select("name, trip_start, trip_end, base_currency, custom_cities, budget").eq("id", groupId).single(),
       sb.from("fx_cache").select("*"),
       sb.from("todos").select("*").eq("group_id", groupId).order("created_at"),
       sb.from("tickets").select("*, ticket_passengers(user_id)").eq("group_id", groupId).order("depart_date", {nullsFirst:false})
@@ -1681,6 +1699,7 @@ function makeSupabaseStore(groupId) {
       tripEnd:      grpRes.data?.trip_end   || "",
       baseCurrency: grpRes.data?.base_currency || "EUR",
       customCities: grpRes.data?.custom_cities || [],
+      budget:       grpRes.data?.budget || {},
       members, expenses, deletedExpenses, payments, fxCache, todos, tickets
     };
   }
@@ -1809,6 +1828,12 @@ function makeSupabaseStore(groupId) {
 
     async setCities(arr) {
       await sb.from("groups").update({custom_cities: arr}).eq("id", groupId);
+      if (sub) sub(await fetchState());
+      flashSaved();
+    },
+
+    async setBudget(budget) {
+      await sb.from("groups").update({budget}).eq("id", groupId);
       if (sub) sub(await fetchState());
       flashSaved();
     },
@@ -2152,7 +2177,7 @@ function settlements() {
 function render() {
   $("tripName").textContent = state.tripName;
   $("totalSpent").textContent = fmtUSD(state.expenses.reduce((s,e)=>s+e.amountUSD,0));
-  renderMyCard(); renderSettle(); renderNet(); renderHistory(); renderCrew(); renderTodos(); renderAddForm(); renderTickets();
+  renderMyCard(); renderSettle(); renderNet(); renderHistory(); renderCrew(); renderTodos(); renderAddForm(); renderTickets(); renderBudget(); renderItinerary();
   if (ui.tab === "stats") renderStats();
 }
 function empty(big,t,x){ return `<div class="empty"><div class="big">${big}</div><div class="t">${t}</div><div class="x">${x}</div></div>`; }
@@ -3107,6 +3132,105 @@ function deleteStack() {
   renderSavings();
   closeStackModal();
 }
+
+/* ══════════════════════════════════════════════════════════════
+   BUDGET  (shared per group — total + per-category caps, auto-filled)
+   ══════════════════════════════════════════════════════════════ */
+let budgetWork = {cats:{}};
+let budgetSpent = {}, budgetTotalSpent = 0;
+let budgetSaveTimer = null;
+const bgNum = v => { const n = parseFloat(String(v).replace(/[^0-9.]/g,"")); return isNaN(n)?null:n; };
+
+function renderBudget() {
+  if (!$("budgetTotalCard")) return;
+  budgetWork = JSON.parse(JSON.stringify(state.budget || {}));
+  if (!budgetWork.cats) budgetWork.cats = {};
+  drawBudget();
+}
+
+function drawBudget() {
+  const b = budgetWork;
+  const knownKeys = new Set(CATEGORIES.map(c=>c.key));
+  budgetSpent = {}; budgetTotalSpent = 0;
+  state.expenses.forEach(e => {
+    let k = e.category || "other"; if (!knownKeys.has(k)) k = "other";
+    budgetSpent[k] = (budgetSpent[k]||0) + (e.amountUSD||0);
+    budgetTotalSpent += (e.amountUSD||0);
+  });
+
+  $("budgetTotalCard").innerHTML = `
+    <h2 style="margin:0">Trip budget</h2>
+    <p class="sub" style="margin-top:6px">Set an overall cap — spending fills in automatically from Payments.</p>
+    <label class="fl">Total budget</label>
+    <div class="bg-set"><div class="amt-input-wrap"><span class="sym">$</span><input type="text" id="bgTotal" inputmode="decimal" value="${b.total!=null?b.total:""}" placeholder="e.g. 3000"></div></div>
+    <div class="bg-total"><span class="big" id="bgSpent">${fmtUSD(budgetTotalSpent)}</span><span class="of" id="bgOf"></span></div>
+    <div class="bg-bar"><div class="fill" id="bgFill"></div></div>
+    <div class="bg-meta"><span id="bgPct"></span><span id="bgLeft"></span></div>`;
+
+  $("budgetCatCard").innerHTML = `
+    <h2 style="margin:0">By category</h2>
+    <p class="sub" style="margin-top:6px">Optional caps per category. Leave blank for no limit.</p>
+    ${CATEGORIES.map(c => {
+      const spent = budgetSpent[c.key]||0;
+      const cap = b.cats[c.key];
+      const hasCap = cap!=null && cap!=="";
+      return `<div class="bg-cat" data-cat-row="${c.key}">
+        <span class="ic">${c.icon}</span>
+        <div class="col">
+          <div class="top"><span class="nm">${c.label}</span><span class="sp"><b>${fmtUSD(spent)}</b><span data-cap-of>${hasCap?` / ${fmtUSD(Number(cap))}`:""}</span></span></div>
+          <div class="minibar" data-mini style="${hasCap?"":"display:none"}"><div class="f" data-minifill></div></div>
+        </div>
+        <div class="capin"><input type="text" inputmode="decimal" data-cap="${c.key}" value="${cap!=null?cap:""}" placeholder="cap"></div>
+      </div>`;
+    }).join("")}`;
+
+  $("bgTotal").oninput = e => { budgetWork.total = bgNum(e.target.value); updateBudgetBars(); persistBudgetSoon(); };
+  document.querySelectorAll("[data-cap]").forEach(inp => inp.oninput = () => {
+    const k = inp.dataset.cap, v = bgNum(inp.value);
+    if (v==null) delete budgetWork.cats[k]; else budgetWork.cats[k] = v;
+    updateBudgetCatRow(k); persistBudgetSoon();
+  });
+  updateBudgetBars();
+}
+
+function updateBudgetBars() {
+  const total = budgetWork.total!=null ? Number(budgetWork.total) : null;
+  const spent = budgetTotalSpent;
+  const fill = $("bgFill"); if (!fill) return;
+  const pct = total>0 ? Math.min(100, Math.round(spent/total*100)) : 0;
+  fill.style.width = (total>0?pct:0) + "%";
+  fill.className = "fill" + (total>0 && spent>total ? " over" : (total>0 && spent>=total*0.85 ? " warn" : ""));
+  $("bgOf").textContent  = "spent" + (total!=null ? ` of ${fmtUSD(total)}` : "");
+  $("bgPct").textContent = total>0 ? pct+"% used" : "no cap set";
+  $("bgLeft").textContent= total!=null ? (total-spent>=0 ? fmtUSD(total-spent)+" left" : fmtUSD(spent-total)+" over") : "";
+  CATEGORIES.forEach(c => updateBudgetCatRow(c.key));
+}
+
+function updateBudgetCatRow(k) {
+  const row = document.querySelector(`[data-cat-row="${k}"]`); if (!row) return;
+  const cap = budgetWork.cats[k], spent = budgetSpent[k]||0;
+  const hasCap = cap!=null && cap!=="";
+  const mini = row.querySelector("[data-mini]"), fillEl = row.querySelector("[data-minifill]"), capOf = row.querySelector("[data-cap-of]");
+  mini.style.display = hasCap ? "" : "none";
+  capOf.textContent  = hasCap ? ` / ${fmtUSD(Number(cap))}` : "";
+  if (hasCap) {
+    const pct = Number(cap)>0 ? Math.min(100, Math.round(spent/Number(cap)*100)) : 0;
+    fillEl.style.width = pct + "%";
+    fillEl.className = "f" + (spent>Number(cap) ? " over" : "");
+  }
+}
+
+function persistBudgetSoon() {
+  flashSaved();
+  clearTimeout(budgetSaveTimer);
+  budgetSaveTimer = setTimeout(async () => {
+    state.budget = JSON.parse(JSON.stringify(budgetWork));
+    if (sb && GROUP_ID) { const {error} = await sb.from("groups").update({budget: budgetWork}).eq("id", GROUP_ID); if (error) console.error("budget save:", error); }
+  }, 700);
+}
+
+/* itinerary render — full implementation added with the Itinerary feature */
+function renderItinerary() {}
 
 function renderCoverageSection() {
   const parts = [...ui.participants];
