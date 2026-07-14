@@ -140,10 +140,24 @@
   .bottom-nav{position:fixed;bottom:0;left:0;right:0;height:64px;background:var(--card);border-top:1px solid var(--line);display:flex;align-items:stretch;z-index:50;padding-bottom:env(safe-area-inset-bottom)}
   .bn-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:none;border:none;cursor:pointer;color:var(--ink-soft);font-family:inherit;padding:0;transition:.15s}
   .bn-btn.active{color:var(--accent)}
-  .bn-icon{font-size:20px;line-height:1}
-  .bn-lbl{font-size:10px;font-weight:600;letter-spacing:.02em}
+  .bn-icon{font-size:19px;line-height:1}
+  .bn-lbl{font-size:9.5px;font-weight:600;letter-spacing:.01em}
   .bn-add{background:var(--accent);border-radius:16px;width:52px;height:44px;flex:0 0 52px;color:#fff !important;margin:0 8px;font-size:26px;align-self:center;padding-bottom:0}
   .bn-add .bn-icon{font-size:28px;line-height:1}
+
+  /* ── area sub-nav (Payments) ── */
+  .subnav{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .subnav::-webkit-scrollbar{display:none}
+  .subnav-btn{flex:1 0 auto;min-width:72px;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);
+    font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:13px;padding:9px 14px;border-radius:9px;
+    cursor:pointer;transition:.12s;white-space:nowrap}
+  .subnav-btn.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+  /* ── area placeholder stub ── */
+  .area-stub{text-align:center;padding:22px 14px 8px}
+  .area-stub-icon{font-size:40px;margin-bottom:10px}
+  .area-stub-t{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:16px;color:var(--ink);margin-bottom:6px}
+  .area-stub-x{font-size:13px;color:var(--ink-soft);line-height:1.5;max-width:340px;margin:0 auto}
 
   /* ── stats ── */
   .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
@@ -822,6 +836,13 @@
     </div>
   </header>
 
+  <!-- Payments sub-nav (only visible in the Payments area) -->
+  <div class="subnav" id="paymentsSubnav">
+    <button type="button" class="subnav-btn active" data-ptab="settle">Settle</button>
+    <button type="button" class="subnav-btn" data-ptab="add">Add</button>
+    <button type="button" class="subnav-btn" data-ptab="history">History</button>
+    <button type="button" class="subnav-btn" data-ptab="stats">Stats</button>
+  </div>
 
   <section id="panel-settle">
     <div class="card hidden" id="myCard">
@@ -966,28 +987,81 @@
     </div>
     <div class="card" id="balancesCard">
       <h2>Where everyone stands</h2>
-      <p class="sub">A plus means the crew owes that person. A minus means they owe the pot. To settle up, head to the home tab.</p>
+      <p class="sub">A plus means the crew owes that person. A minus means they owe the pot. To settle up, head to the Payments area.</p>
       <div class="net-grid" id="netGrid"></div>
     </div>
   </section>
 
+  <section id="panel-budget" class="hidden">
+    <div class="card">
+      <h2>Trip budget</h2>
+      <p class="sub">Plan and track spending caps for this trip — lodging, food, activities, transit. Coming together next.</p>
+      <div class="area-stub">
+        <div class="area-stub-icon">📊</div>
+        <div class="area-stub-t">Budgeting lives here</div>
+        <div class="area-stub-x">Set a total trip budget and per-category caps, then watch it fill up as expenses land in Payments.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="panel-savings" class="hidden">
+    <div class="card">
+      <h2>Trip savings</h2>
+      <p class="sub">Private to you. Figure out how much to set aside and whether you're on pace for the trip.</p>
+      <div class="area-stub">
+        <div class="area-stub-icon">🐷</div>
+        <div class="area-stub-t">Your savings plan lives here</div>
+        <div class="area-stub-x">Income, expenses, current savings &amp; investments, a target date, and the math for how much per week gets you there. Only you can see this.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="panel-tickets" class="hidden">
+    <div class="card">
+      <h2>Tickets</h2>
+      <p class="sub">Flights, trains, buses — yours and any the whole group shares.</p>
+      <div class="area-stub">
+        <div class="area-stub-icon">🎫</div>
+        <div class="area-stub-t">Tickets live here</div>
+        <div class="area-stub-x">Add a ticket with date, time, route, and confirmation number. Mark it shared so the crew sees it too.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="panel-itinerary" class="hidden">
+    <div class="card">
+      <h2>Itinerary</h2>
+      <p class="sub">The day-by-day plan. Drag to reorder as things change.</p>
+      <div class="area-stub">
+        <div class="area-stub-icon">🗺️</div>
+        <div class="area-stub-t">Your plans live here</div>
+        <div class="area-stub-x">Add stops and activities per day, then drag them around. Everyone in the group stays in sync.</div>
+      </div>
+    </div>
+  </section>
+
   <nav class="bottom-nav" id="bottomNav">
-    <button class="bn-btn active" data-tab="settle" aria-label="Home">
-      <span class="bn-icon">⚖️</span>
-      <span class="bn-lbl">Home</span>
+    <button class="bn-btn active" data-area="payments" aria-label="Payments">
+      <span class="bn-icon">🧾</span>
+      <span class="bn-lbl">Payments</span>
     </button>
-    <button class="bn-btn" data-tab="history" aria-label="History">
-      <span class="bn-icon">📋</span>
-      <span class="bn-lbl">History</span>
-    </button>
-    <button class="bn-btn bn-add" data-tab="add" aria-label="Add">
-      <span class="bn-icon">＋</span>
-    </button>
-    <button class="bn-btn" data-tab="stats" aria-label="Stats">
+    <button class="bn-btn" data-area="budget" aria-label="Budget">
       <span class="bn-icon">📊</span>
-      <span class="bn-lbl">Stats</span>
+      <span class="bn-lbl">Budget</span>
     </button>
-    <button class="bn-btn" data-tab="crew" aria-label="Crew">
+    <button class="bn-btn" data-area="savings" aria-label="Savings">
+      <span class="bn-icon">🐷</span>
+      <span class="bn-lbl">Savings</span>
+    </button>
+    <button class="bn-btn" data-area="tickets" aria-label="Tickets">
+      <span class="bn-icon">🎫</span>
+      <span class="bn-lbl">Tickets</span>
+    </button>
+    <button class="bn-btn" data-area="itinerary" aria-label="Itinerary">
+      <span class="bn-icon">🗺️</span>
+      <span class="bn-lbl">Plans</span>
+    </button>
+    <button class="bn-btn" data-area="crew" aria-label="Crew">
       <span class="bn-icon">👥</span>
       <span class="bn-lbl">Crew</span>
     </button>
@@ -1040,7 +1114,7 @@ const CATEGORIES   = [
 
 /* ══ app state ══ */
 let state  = {tripName:"SplitStack", tripStart:"", tripEnd:"", baseCurrency:"EUR", members:[], expenses:[], deletedExpenses:[], payments:[], fxCache:{}, customCities:[], todos:[]};
-let ui     = {tab:"settle", selectedCity:null, participants:new Set(), splitMode:"even",
+let ui     = {area:"payments", tab:"settle", selectedCity:null, participants:new Set(), splitMode:"even",
               customSplits:{}, pctSplits:{}, currency:"EUR", date:todayISO(), liveRate:null,
               rateLoading:false, manualRate:"", forceManual:false, scanBusy:false, scanError:null,
               lineItems:[], itemScanBusy:false, itemScanError:null, scanWarning:null,
@@ -1277,6 +1351,7 @@ function showApp() {
   $("authScreen").classList.add("hidden");
   $("groupScreen").classList.add("hidden");
   $("app").classList.remove("hidden");
+  switchArea("payments");
   $("groupCodeBadge").textContent  = GROUP_CODE;
   $("shareUrl").value              = shareLink();
   $("inviteLinkInput").value       = shareLink();
@@ -2802,14 +2877,48 @@ function exportCSV() {
 }
 
 
-function switchTab(t) {
-  ui.tab = t;
-  document.querySelectorAll(".bn-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === t));
-  ["settle","add","todo","history","crew","stats"].forEach(p => {
-    const el = $("panel-" + p); if (el) el.classList.toggle("hidden", p !== t);
+/* Top level: the six trip areas shown in the bottom nav. */
+const AREAS = ["payments","budget","savings","tickets","itinerary","crew"];
+/* Sub-tabs inside the Payments area. */
+const PAYMENT_TABS = ["settle","add","history","stats"];
+
+function switchArea(area) {
+  if (!AREAS.includes(area)) area = "payments";
+  ui.area = area;
+  document.querySelectorAll(".bn-btn").forEach(b => b.classList.toggle("active", b.dataset.area === area));
+
+  const inPayments = area === "payments";
+  $("paymentsSubnav").classList.toggle("hidden", !inPayments);
+
+  /* hide every panel, then show what this area needs */
+  ["settle","add","history","stats","budget","savings","tickets","itinerary","crew"].forEach(p => {
+    const el = $("panel-" + p); if (el) el.classList.add("hidden");
   });
-  if (t === "add") refreshRate();
-  if (t === "stats") renderStats();
+
+  if (inPayments) {
+    setPaymentsTab(ui.tab);
+  } else {
+    const el = $("panel-" + area); if (el) el.classList.remove("hidden");
+  }
+  window.scrollTo(0, 0);
+}
+
+function setPaymentsTab(tab) {
+  if (!PAYMENT_TABS.includes(tab)) tab = "settle";
+  ui.tab = tab;
+  document.querySelectorAll("#paymentsSubnav .subnav-btn")
+    .forEach(b => b.classList.toggle("active", b.dataset.ptab === tab));
+  PAYMENT_TABS.forEach(p => {
+    const el = $("panel-" + p); if (el) el.classList.toggle("hidden", p !== tab);
+  });
+  if (tab === "add")   refreshRate();
+  if (tab === "stats") renderStats();
+}
+
+/* Back-compat: existing callers use switchTab("add"|"history"|"settle"). */
+function switchTab(t) {
+  if (PAYMENT_TABS.includes(t)) { switchArea("payments"); setPaymentsTab(t); }
+  else switchArea(t);
 }
 
 /* ── theme + pattern data ── */
@@ -3036,7 +3145,8 @@ function copyShare() { navigator.clipboard?.writeText(shareLink()); flashSaved()
 /* ══════════════════════════════════════════════════════════════
    WIRE UP EVENTS
    ══════════════════════════════════════════════════════════════ */
-document.querySelectorAll(".bn-btn").forEach(b => b.onclick = () => switchTab(b.dataset.tab));
+document.querySelectorAll(".bn-btn").forEach(b => b.onclick = () => switchArea(b.dataset.area));
+document.querySelectorAll("#paymentsSubnav .subnav-btn").forEach(b => b.onclick = () => setPaymentsTab(b.dataset.ptab));
 $("darkToggle").onclick = () => { darkMode = !darkMode; applyTheme(darkMode); };
 $("addBtn").onclick    = addExpense;
 $("cancelEditBtn").onclick = cancelEdit;
