@@ -159,6 +159,25 @@
   .area-stub-t{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:16px;color:var(--ink);margin-bottom:6px}
   .area-stub-x{font-size:13px;color:var(--ink-soft);line-height:1.5;max-width:340px;margin:0 auto}
 
+  /* ── tickets ── */
+  .ticket-card{border:1px solid var(--line);border-radius:12px;padding:13px 14px;margin-top:10px;background:var(--card);cursor:pointer;transition:.12s}
+  .ticket-card:hover{border-color:var(--ink-soft)}
+  .ticket-top{display:flex;align-items:center;gap:10px}
+  .ticket-emoji{font-size:22px;flex:0 0 auto}
+  .ticket-route{flex:1;min-width:0}
+  .ticket-route .rt{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ticket-route .rt .dash{color:var(--stamp);margin:0 6px;font-weight:700}
+  .ticket-route .sub2{font-size:12px;color:var(--ink-soft);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ticket-when{flex:0 0 auto;text-align:right}
+  .ticket-when .d{font-family:'Space Mono',monospace;font-weight:700;font-size:13px;color:var(--ink)}
+  .ticket-when .t{font-size:11.5px;color:var(--ink-soft);margin-top:1px}
+  .ticket-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .ticket-tag{font-size:11px;font-weight:600;color:var(--ink-soft);background:var(--kraft);border-radius:6px;padding:3px 8px}
+  .ticket-tag.private{background:var(--red-soft);color:var(--stamp)}
+  .ticket-tag.file{background:var(--green-soft);color:var(--green)}
+  .ticket-pax-av{display:inline-flex;align-items:center;gap:3px}
+  .ticket-empty{text-align:center;padding:18px 10px;color:var(--ink-soft);font-size:13px}
+
   /* ── stats ── */
   .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
   .stat-tile{background:var(--kraft);border-radius:12px;padding:14px;text-align:center}
@@ -606,6 +625,72 @@
   </div>
 </div>
 
+<!-- ═══════════════════ TICKET MODAL ═══════════════════ -->
+<div class="overlay hidden" id="ticketModal">
+  <div class="sheet" style="max-height:90vh;overflow-y:auto">
+    <button class="closex" id="ticketClose">×</button>
+    <h2 id="ticketModalTitle">Add ticket</h2>
+
+    <label class="fl">Type</label>
+    <div class="seg" id="ticketKindSeg">
+      <button type="button" data-kind="flight" aria-pressed="true">✈ Flight</button>
+      <button type="button" data-kind="train"  aria-pressed="false">🚆 Train</button>
+      <button type="button" data-kind="bus"    aria-pressed="false">🚌 Bus</button>
+      <button type="button" data-kind="other"  aria-pressed="false">🎫 Other</button>
+    </div>
+
+    <label class="fl" style="margin-top:10px">Label <span style="font-weight:400;text-transform:none">(optional)</span></label>
+    <input type="text" id="ticketTitle" placeholder="e.g. Outbound flight, Eurostar to Paris">
+
+    <div class="row2" style="margin-top:10px">
+      <div><label class="fl">From</label><input type="text" id="ticketFrom" placeholder="JFK / London"></div>
+      <div><label class="fl">To</label><input type="text" id="ticketTo" placeholder="CDG / Paris"></div>
+    </div>
+    <div class="row2" style="margin-top:10px">
+      <div><label class="fl">Depart date</label><input type="date" id="ticketDepartDate"></div>
+      <div><label class="fl">Depart time</label><input type="time" id="ticketDepartTime"></div>
+    </div>
+    <div class="row2" style="margin-top:10px">
+      <div><label class="fl">Arrive date</label><input type="date" id="ticketArriveDate"></div>
+      <div><label class="fl">Arrive time</label><input type="time" id="ticketArriveTime"></div>
+    </div>
+    <div class="row2" style="margin-top:10px">
+      <div><label class="fl">Confirmation #</label><input type="text" id="ticketConfirmation" placeholder="ABC123"></div>
+      <div><label class="fl">Seat</label><input type="text" id="ticketSeat" placeholder="12A"></div>
+    </div>
+    <div class="row2" style="margin-top:10px">
+      <div><label class="fl">Price <span style="font-weight:400;text-transform:none">(optional)</span></label>
+        <div class="amt-input-wrap"><span class="sym" id="ticketPriceSym">$</span><input type="text" id="ticketPrice" inputmode="decimal" placeholder="0.00"></div></div>
+      <div><label class="fl">Currency</label><select id="ticketCurrency" style="width:100%"></select></div>
+    </div>
+
+    <label class="fl" style="margin-top:10px">Who's on this ticket</label>
+    <div class="chips" id="ticketPaxChips"></div>
+
+    <label class="fl" style="margin-top:12px">Notes <span style="font-weight:400;text-transform:none">(optional)</span></label>
+    <textarea id="ticketNotes" style="resize:none;height:52px" placeholder="Gate, terminal, baggage info…"></textarea>
+
+    <label class="fl" style="margin-top:12px">Ticket file <span style="font-weight:400;text-transform:none">(PDF or photo)</span></label>
+    <input type="file" id="ticketFileInput" accept="image/*,application/pdf" style="display:none">
+    <button type="button" class="btn ghost" id="ticketFilePick" style="width:100%">📎 Attach ticket file</button>
+    <div id="ticketFileRow" class="hidden" style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12.5px">
+      <span id="ticketFileName" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-soft)"></span>
+      <a id="ticketFileView" href="#" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600;text-decoration:none">view</a>
+      <button type="button" id="ticketFileClear" style="border:none;background:none;color:var(--stamp);font-weight:600;cursor:pointer;font-family:inherit">remove</button>
+    </div>
+
+    <label class="agree-row" style="margin-top:14px">
+      <input type="checkbox" id="ticketShared" checked>
+      <span>Share with the whole group — everyone can see this ticket. Leave off to keep it just for you.</span>
+    </label>
+
+    <div class="auth-err" id="ticketErr"></div>
+    <button class="btn" id="ticketSave" style="margin-top:8px;width:100%">Save ticket</button>
+    <button class="btn ghost" id="ticketSplit" style="margin-top:8px;width:100%;display:none">💸 Split this cost with the group</button>
+    <button class="btn ghost" id="ticketDelete" style="margin-top:8px;width:100%;display:none;color:var(--stamp)">Delete ticket</button>
+  </div>
+</div>
+
 <!-- ═══════════════════ PRIVACY POLICY ═══════════════════ -->
 <div class="overlay hidden" id="privacyModal">
   <div class="sheet" style="max-height:85vh;overflow-y:auto">
@@ -1018,13 +1103,12 @@
 
   <section id="panel-tickets" class="hidden">
     <div class="card">
-      <h2>Tickets</h2>
-      <p class="sub">Flights, trains, buses — yours and any the whole group shares.</p>
-      <div class="area-stub">
-        <div class="area-stub-icon">🎫</div>
-        <div class="area-stub-t">Tickets live here</div>
-        <div class="area-stub-x">Add a ticket with date, time, route, and confirmation number. Mark it shared so the crew sees it too.</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <h2 style="margin:0">Tickets</h2>
+        <button class="btn" id="addTicketBtn" style="width:auto;margin:0;padding:8px 15px">+ Add</button>
       </div>
+      <p class="sub" style="margin-top:6px">Flights, trains, buses — yours and any the whole group shares.</p>
+      <div id="ticketList"></div>
     </div>
   </section>
 
@@ -1113,7 +1197,7 @@ const CATEGORIES   = [
 ];
 
 /* ══ app state ══ */
-let state  = {tripName:"SplitStack", tripStart:"", tripEnd:"", baseCurrency:"EUR", members:[], expenses:[], deletedExpenses:[], payments:[], fxCache:{}, customCities:[], todos:[]};
+let state  = {tripName:"SplitStack", tripStart:"", tripEnd:"", baseCurrency:"EUR", members:[], expenses:[], deletedExpenses:[], payments:[], fxCache:{}, customCities:[], todos:[], tickets:[]};
 let ui     = {area:"payments", tab:"settle", selectedCity:null, participants:new Set(), splitMode:"even",
               customSplits:{}, pctSplits:{}, currency:"EUR", date:todayISO(), liveRate:null,
               rateLoading:false, manualRate:"", forceManual:false, scanBusy:false, scanError:null,
@@ -1400,13 +1484,14 @@ function makeSupabaseStore(groupId) {
   let channel = null;
 
   async function fetchState() {
-    const [membersRes, expRes, payRes, grpRes, fxRes, todoRes] = await Promise.all([
+    const [membersRes, expRes, payRes, grpRes, fxRes, todoRes, ticketsRes] = await Promise.all([
       sb.from("group_members").select("user_id, created_at").eq("group_id", groupId).order("created_at"),
       sb.from("expenses").select("*").eq("group_id", groupId).order("created_at"),
       sb.from("payments").select("*").eq("group_id", groupId).order("created_at"),
       sb.from("groups").select("name, trip_start, trip_end, base_currency, custom_cities").eq("id", groupId).single(),
       sb.from("fx_cache").select("*"),
-      sb.from("todos").select("*").eq("group_id", groupId).order("created_at")
+      sb.from("todos").select("*").eq("group_id", groupId).order("created_at"),
+      sb.from("tickets").select("*, ticket_passengers(user_id)").eq("group_id", groupId).order("depart_date", {nullsFirst:false})
     ]);
     if (membersRes.error) console.error("members query:", membersRes.error);
 
@@ -1478,13 +1563,37 @@ function makeSupabaseStore(groupId) {
       ts:   new Date(t.created_at).getTime()
     }));
 
+    if (ticketsRes?.error) console.error("tickets query:", ticketsRes.error);
+    const tickets = (ticketsRes?.data || []).map(t => ({
+      id:            t.id,
+      kind:          t.kind || "flight",
+      title:         t.title || "",
+      from:          t.from_loc || "",
+      to:            t.to_loc || "",
+      departDate:    t.depart_date || "",
+      departTime:    t.depart_time || "",
+      arriveDate:    t.arrive_date || "",
+      arriveTime:    t.arrive_time || "",
+      confirmation:  t.confirmation || "",
+      seat:          t.seat || "",
+      notes:         t.notes || "",
+      price:         t.price != null ? parseFloat(t.price) : null,
+      currency:      t.currency || "USD",
+      costExpenseId: t.cost_expense_id || null,
+      fileUrl:       t.file_url || null,
+      shared:        t.shared !== false,
+      createdBy:     t.created_by,
+      passengers:    (t.ticket_passengers || []).map(p => p.user_id),
+      ts:            new Date(t.created_at).getTime()
+    }));
+
     return {
       tripName:     grpRes.data?.name || "SplitStack",
       tripStart:    grpRes.data?.trip_start || "",
       tripEnd:      grpRes.data?.trip_end   || "",
       baseCurrency: grpRes.data?.base_currency || "EUR",
       customCities: grpRes.data?.custom_cities || [],
-      members, expenses, deletedExpenses, payments, fxCache, todos
+      members, expenses, deletedExpenses, payments, fxCache, todos, tickets
     };
   }
 
@@ -1497,7 +1606,40 @@ function makeSupabaseStore(groupId) {
       .on("postgres_changes", {event:"*", schema:"public", table:"group_members", filter:`group_id=eq.${groupId}`}, refresh)
       .on("postgres_changes", {event:"*", schema:"public", table:"groups",        filter:`id=eq.${groupId}`},       refresh)
       .on("postgres_changes", {event:"*", schema:"public", table:"todos",         filter:`group_id=eq.${groupId}`}, refresh)
+      .on("postgres_changes", {event:"*", schema:"public", table:"tickets",       filter:`group_id=eq.${groupId}`}, refresh)
+      .on("postgres_changes", {event:"*", schema:"public", table:"ticket_passengers"}, refresh)
       .subscribe(status => setSync(status === "SUBSCRIBED" ? "synced" : "offline"));
+  }
+
+  /* replace the passenger set for a ticket with the given user ids */
+  async function syncPassengers(ticketId, passengers) {
+    await sb.from("ticket_passengers").delete().eq("ticket_id", ticketId);
+    const rows = (passengers || []).map(uid => ({ticket_id: ticketId, user_id: uid}));
+    if (rows.length) {
+      const {error} = await sb.from("ticket_passengers").insert(rows);
+      if (error) console.error("passengers insert:", error);
+    }
+  }
+
+  /* map a UI ticket object to db columns (shared by add + update) */
+  function ticketCols(t) {
+    return {
+      kind:         t.kind || "flight",
+      title:        t.title || null,
+      from_loc:     t.from || null,
+      to_loc:       t.to || null,
+      depart_date:  t.departDate || null,
+      depart_time:  t.departTime || null,
+      arrive_date:  t.arriveDate || null,
+      arrive_time:  t.arriveTime || null,
+      confirmation: t.confirmation || null,
+      seat:         t.seat || null,
+      notes:        t.notes || null,
+      price:        (t.price !== "" && t.price != null) ? t.price : null,
+      currency:     t.currency || "USD",
+      file_url:     t.fileUrl || null,
+      shared:       t.shared !== false
+    };
   }
 
   return {
@@ -1541,6 +1683,38 @@ function makeSupabaseStore(groupId) {
 
     async delTodo(id) {
       await sb.from("todos").delete().eq("id", id);
+      if (sub) sub(await fetchState());
+      flashSaved();
+    },
+
+    async addTicket(id, t, passengers) {
+      const {error} = await sb.from("tickets").insert({
+        id, group_id: groupId, created_by: meId, ...ticketCols(t)
+      });
+      if (error) { alert("Error saving ticket: " + error.message); return false; }
+      await syncPassengers(id, passengers);
+      if (sub) sub(await fetchState());
+      flashSaved();
+      return true;
+    },
+
+    async updateTicket(id, t, passengers) {
+      const {error} = await sb.from("tickets").update(ticketCols(t)).eq("id", id);
+      if (error) { alert("Error saving ticket: " + error.message); return false; }
+      await syncPassengers(id, passengers);
+      if (sub) sub(await fetchState());
+      flashSaved();
+      return true;
+    },
+
+    async setTicketExpense(id, expenseId) {
+      await sb.from("tickets").update({cost_expense_id: expenseId}).eq("id", id);
+      if (sub) sub(await fetchState());
+    },
+
+    async delTicket(id) {
+      const {error} = await sb.from("tickets").delete().eq("id", id);
+      if (error) { alert("Could not delete ticket: " + error.message); return; }
       if (sub) sub(await fetchState());
       flashSaved();
     },
@@ -1890,7 +2064,7 @@ function settlements() {
 function render() {
   $("tripName").textContent = state.tripName;
   $("totalSpent").textContent = fmtUSD(state.expenses.reduce((s,e)=>s+e.amountUSD,0));
-  renderMyCard(); renderSettle(); renderNet(); renderHistory(); renderCrew(); renderTodos(); renderAddForm();
+  renderMyCard(); renderSettle(); renderNet(); renderHistory(); renderCrew(); renderTodos(); renderAddForm(); renderTickets();
   if (ui.tab === "stats") renderStats();
 }
 function empty(big,t,x){ return `<div class="empty"><div class="big">${big}</div><div class="t">${t}</div><div class="x">${x}</div></div>`; }
@@ -2224,6 +2398,265 @@ async function addTodo() {
   const v=$("newTodo").value.trim(); if(!v) return;
   $("newTodo").value="";
   await store.addTodo(uid(), v);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TICKETS
+   ══════════════════════════════════════════════════════════════ */
+const TICKET_KINDS = {
+  flight: {emoji:"✈️", label:"Flight"},
+  train:  {emoji:"🚆", label:"Train"},
+  bus:    {emoji:"🚌", label:"Bus"},
+  other:  {emoji:"🎫", label:"Ticket"},
+};
+let ticketEditId  = null;
+let ticketPax     = new Set();
+let ticketFile    = null;    /* staged File awaiting upload */
+let ticketFileUrl = null;    /* already-saved file url */
+let ticketKind    = "flight";
+let ticketReadOnly= false;
+
+function fmtTicketDate(d) {
+  if (!d) return "";
+  const dt = new Date(d + "T00:00:00");
+  return isNaN(dt) ? d : dt.toLocaleDateString(undefined, {month:"short", day:"numeric"});
+}
+function fmtTicketTime(t) {
+  if (!t) return "";
+  const [h,m] = t.split(":").map(Number);
+  if (isNaN(h)) return t;
+  const ap = h<12 ? "am" : "pm"; const h12 = (h%12)||12;
+  return `${h12}:${String(m||0).padStart(2,"0")}${ap}`;
+}
+function fmtTicketPrice(p, cur) {
+  if (p == null) return "";
+  return (CUR_SYM[cur]||cur||"$") + Number(p).toFixed(2);
+}
+
+function renderTickets() {
+  const el = $("ticketList"); if (!el) return;
+  const tickets = state.tickets || [];
+  if (!tickets.length) {
+    el.innerHTML = `<div class="ticket-empty">No tickets yet. Tap <strong>+ Add</strong> to save a flight, train, or bus.</div>`;
+    return;
+  }
+  el.innerHTML = tickets.map(t => {
+    const k = TICKET_KINDS[t.kind] || TICKET_KINDS.other;
+    const route = (t.from || t.to)
+      ? `${escHtml(t.from||"—")}<span class="dash">→</span>${escHtml(t.to||"—")}`
+      : escHtml(t.title || k.label);
+    const sub = (t.title && (t.from||t.to)) ? escHtml(t.title) : "";
+    const pax = (t.passengers||[]).map(id => {
+      const m = state.members.find(x=>x.id===id); return m?avatarEl(m,20):"";
+    }).join("");
+    const when = t.departDate
+      ? `<div class="ticket-when"><div class="d">${fmtTicketDate(t.departDate)}</div>${t.departTime?`<div class="t">${fmtTicketTime(t.departTime)}</div>`:""}</div>`
+      : "";
+    const tags = [];
+    if (!t.shared)          tags.push(`<span class="ticket-tag private">🔒 Private</span>`);
+    if (t.fileUrl)          tags.push(`<span class="ticket-tag file">📎 File</span>`);
+    if (t.price != null)    tags.push(`<span class="ticket-tag">${fmtTicketPrice(t.price,t.currency)}</span>`);
+    if (t.costExpenseId)    tags.push(`<span class="ticket-tag">💸 In Payments</span>`);
+    if (t.confirmation)     tags.push(`<span class="ticket-tag">#${escHtml(t.confirmation)}</span>`);
+    if (t.createdBy!==meId) tags.push(`<span class="ticket-tag">by ${escHtml(nameOf(t.createdBy))}</span>`);
+    return `<div class="ticket-card" data-ticket="${t.id}">
+      <div class="ticket-top">
+        <span class="ticket-emoji">${k.emoji}</span>
+        <div class="ticket-route"><div class="rt">${route}</div>${sub?`<div class="sub2">${sub}</div>`:""}${pax?`<div class="ticket-pax-av" style="margin-top:4px">${pax}</div>`:""}</div>
+        ${when}
+      </div>
+      ${tags.length?`<div class="ticket-tags">${tags.join("")}</div>`:""}
+    </div>`;
+  }).join("");
+  el.querySelectorAll("[data-ticket]").forEach(c => c.onclick = () => openTicketModal(c.dataset.ticket));
+}
+
+function renderTicketPax() {
+  const el = $("ticketPaxChips");
+  el.innerHTML = state.members.length
+    ? state.members.map(m =>
+        `<span class="chip" data-pax="${m.id}" aria-pressed="${ticketPax.has(m.id)?"true":"false"}">${escHtml(m.name)}${m.id===meId?" (you)":""}</span>`
+      ).join("")
+    : `<span class="sub">No crew yet.</span>`;
+  if (!ticketReadOnly) el.querySelectorAll("[data-pax]").forEach(ch => ch.onclick = () => {
+    const id = ch.dataset.pax;
+    if (ticketPax.has(id)) ticketPax.delete(id); else ticketPax.add(id);
+    ch.setAttribute("aria-pressed", ticketPax.has(id)?"true":"false");
+  });
+}
+
+function populateTicketCurrency() {
+  const sel = $("ticketCurrency");
+  if (sel.options.length === 0)
+    sel.innerHTML = CURRENCIES.map(c => `<option value="${c}">${c} ${CUR_SYM[c]||""}</option>`).join("");
+}
+function updateTicketPriceSym() { $("ticketPriceSym").textContent = CUR_SYM[$("ticketCurrency").value] || "$"; }
+function ticketErr(msg) { $("ticketErr").textContent = msg || ""; }
+
+function setTicketKind(k) {
+  ticketKind = k;
+  $("ticketKindSeg").querySelectorAll("[data-kind]").forEach(b =>
+    b.setAttribute("aria-pressed", b.dataset.kind === k ? "true":"false"));
+}
+
+function setTicketFields(t) {
+  $("ticketTitle").value        = t.title || "";
+  $("ticketFrom").value         = t.from || "";
+  $("ticketTo").value           = t.to || "";
+  $("ticketDepartDate").value   = t.departDate || "";
+  $("ticketDepartTime").value   = t.departTime || "";
+  $("ticketArriveDate").value   = t.arriveDate || "";
+  $("ticketArriveTime").value   = t.arriveTime || "";
+  $("ticketConfirmation").value = t.confirmation || "";
+  $("ticketSeat").value         = t.seat || "";
+  $("ticketPrice").value        = (t.price!=null?t.price:"");
+  $("ticketNotes").value        = t.notes || "";
+  $("ticketShared").checked     = t.shared !== false;
+}
+
+function updateTicketFileRow() {
+  const row = $("ticketFileRow");
+  if (ticketFile) {
+    row.classList.remove("hidden");
+    $("ticketFileName").textContent = ticketFile.name;
+    $("ticketFileView").style.display = "none";
+    $("ticketFilePick").textContent = "📎 Replace file";
+  } else if (ticketFileUrl) {
+    row.classList.remove("hidden");
+    $("ticketFileName").textContent = "Attached ticket";
+    $("ticketFileView").style.display = "";
+    $("ticketFileView").href = ticketFileUrl;
+    $("ticketFilePick").textContent = "📎 Replace file";
+  } else {
+    row.classList.add("hidden");
+    $("ticketFilePick").textContent = "📎 Attach ticket file";
+  }
+}
+
+function setTicketReadOnly(ro) {
+  ticketReadOnly = ro;
+  ["ticketTitle","ticketFrom","ticketTo","ticketDepartDate","ticketDepartTime","ticketArriveDate",
+   "ticketArriveTime","ticketConfirmation","ticketSeat","ticketPrice","ticketCurrency","ticketNotes",
+   "ticketShared","ticketFilePick","ticketFileClear"].forEach(id => { const el=$(id); if (el) el.disabled = ro; });
+  $("ticketKindSeg").querySelectorAll("button").forEach(b => b.disabled = ro);
+  $("ticketSave").style.display = ro ? "none" : "";
+}
+
+function openTicketModal(id) {
+  populateTicketCurrency();
+  ticketErr(""); ticketFile = null;
+  if (id) {
+    const t = (state.tickets||[]).find(x => x.id === id);
+    if (!t) return;
+    const owner = t.createdBy === meId;
+    ticketEditId = id;
+    $("ticketModalTitle").textContent = owner ? "Edit ticket" : "Ticket details";
+    setTicketKind(t.kind || "flight");
+    setTicketFields(t);
+    $("ticketCurrency").value = t.currency || state.baseCurrency || "USD";
+    ticketPax = new Set(t.passengers || []);
+    ticketFileUrl = t.fileUrl || null;
+    setTicketReadOnly(!owner);
+    $("ticketDelete").style.display = owner ? "" : "none";
+    setTicketSplitButton(owner ? t : null);
+  } else {
+    ticketEditId = null;
+    $("ticketModalTitle").textContent = "Add ticket";
+    setTicketKind("flight");
+    setTicketFields({shared:true});
+    $("ticketCurrency").value = state.baseCurrency || "USD";
+    ticketPax = new Set(meId ? [meId] : []);
+    ticketFileUrl = null;
+    setTicketReadOnly(false);
+    $("ticketDelete").style.display = "none";
+    setTicketSplitButton(null);
+  }
+  updateTicketPriceSym();
+  updateTicketFileRow();
+  renderTicketPax();
+  $("ticketModal").classList.remove("hidden");
+}
+function closeTicketModal() { $("ticketModal").classList.add("hidden"); }
+
+/* show the "split this cost" button only for a saved ticket you own */
+function setTicketSplitButton(t) {
+  const btn = $("ticketSplit");
+  if (!t) { btn.style.display = "none"; return; }
+  btn.style.display = "";
+  if (t.costExpenseId) { btn.disabled = true;  btn.textContent = "✓ Already split in Payments"; }
+  else                 { btn.disabled = false; btn.textContent = "💸 Split this cost with the group"; }
+}
+
+async function uploadTicketFile(ticketId, file) {
+  try {
+    const ext = (file.name.split(".").pop() || "dat").toLowerCase().replace(/[^a-z0-9]/g,"");
+    const path = `${GROUP_ID}/${ticketId}.${ext||"dat"}`;
+    const {error} = await sb.storage.from("tickets").upload(path, file, {upsert:true, contentType:file.type||"application/octet-stream"});
+    if (error) { console.error("ticket upload:", error); return null; }
+    return sb.storage.from("tickets").getPublicUrl(path).data.publicUrl;
+  } catch(e) { console.error(e); return null; }
+}
+
+async function saveTicket() {
+  if (!store) return;
+  const id = ticketEditId || uid();
+  let fileUrl = ticketFileUrl;
+  if (ticketFile) {
+    $("ticketSave").disabled = true; $("ticketSave").textContent = "Uploading…";
+    fileUrl = await uploadTicketFile(id, ticketFile) || ticketFileUrl;
+    $("ticketSave").disabled = false; $("ticketSave").textContent = "Save ticket";
+  }
+  const t = {
+    kind: ticketKind,
+    title: $("ticketTitle").value.trim(),
+    from: $("ticketFrom").value.trim(),
+    to: $("ticketTo").value.trim(),
+    departDate: $("ticketDepartDate").value,
+    departTime: $("ticketDepartTime").value,
+    arriveDate: $("ticketArriveDate").value,
+    arriveTime: $("ticketArriveTime").value,
+    confirmation: $("ticketConfirmation").value.trim(),
+    seat: $("ticketSeat").value.trim(),
+    notes: $("ticketNotes").value.trim(),
+    price: $("ticketPrice").value.trim() ? parseFloat($("ticketPrice").value) : null,
+    currency: $("ticketCurrency").value,
+    fileUrl,
+    shared: $("ticketShared").checked
+  };
+  const pax = [...ticketPax];
+  const ok = ticketEditId ? await store.updateTicket(id, t, pax) : await store.addTicket(id, t, pax);
+  if (ok) closeTicketModal();
+}
+
+async function deleteTicket() {
+  if (!ticketEditId) return;
+  if (!confirm("Delete this ticket? This can't be undone.")) return;
+  await store.delTicket(ticketEditId);
+  closeTicketModal();
+}
+
+async function splitTicketCost() {
+  const id = ticketEditId; if (!id || !store) return;
+  const price = $("ticketPrice").value.trim() ? parseFloat($("ticketPrice").value) : null;
+  if (!price || price <= 0) { ticketErr("Add a price above first, then split it."); return; }
+  const cur  = $("ticketCurrency").value;
+  const parts = ticketPax.size ? [...ticketPax] : state.members.map(m=>m.id);
+  const date = $("ticketDepartDate").value || todayISO();
+  const btn = $("ticketSplit"); btn.disabled = true; btn.textContent = "Adding…";
+  const rate = await getRate(cur, date);
+  if (rate == null) { btn.disabled = false; btn.textContent = "💸 Split this cost with the group";
+    ticketErr("Couldn't fetch an exchange rate — add the expense manually in Payments."); return; }
+  const desc = ($("ticketTitle").value.trim() ||
+    `${$("ticketFrom").value.trim()||"Ticket"} → ${$("ticketTo").value.trim()||""}`).trim() || "Ticket";
+  const expId = uid();
+  await store.addExpense(expId, {
+    payer: meId, desc, origAmount: price, origCurrency: cur, rate, amountUSD: price*rate,
+    date, participants: parts, splitMode:"even", customSplits:null, coverages:{},
+    city:null, receiptUrl:null, category:"Travel", notes:`From ticket: ${desc}`
+  });
+  await store.setTicketExpense(id, expId);
+  btn.textContent = "✓ Added to Payments";
+  ticketErr("");
 }
 
 function renderCoverageSection() {
@@ -3147,6 +3580,23 @@ function copyShare() { navigator.clipboard?.writeText(shareLink()); flashSaved()
    ══════════════════════════════════════════════════════════════ */
 document.querySelectorAll(".bn-btn").forEach(b => b.onclick = () => switchArea(b.dataset.area));
 document.querySelectorAll("#paymentsSubnav .subnav-btn").forEach(b => b.onclick = () => setPaymentsTab(b.dataset.ptab));
+
+/* ── tickets wiring ── */
+$("addTicketBtn").onclick = () => openTicketModal(null);
+$("ticketClose").onclick  = closeTicketModal;
+$("ticketModal").onclick  = e => { if (e.target === $("ticketModal")) closeTicketModal(); };
+$("ticketSave").onclick   = saveTicket;
+$("ticketDelete").onclick = deleteTicket;
+$("ticketSplit").onclick  = splitTicketCost;
+$("ticketKindSeg").querySelectorAll("[data-kind]").forEach(b => b.onclick = () => { if(!ticketReadOnly) setTicketKind(b.dataset.kind); });
+$("ticketCurrency").onchange = updateTicketPriceSym;
+$("ticketFilePick").onclick = () => $("ticketFileInput").click();
+$("ticketFileInput").onchange = e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  if (f.size > 15 * 1024 * 1024) { ticketErr("File is too large (max 15 MB)."); return; }
+  ticketFile = f; ticketErr(""); updateTicketFileRow();
+};
+$("ticketFileClear").onclick = () => { ticketFile = null; ticketFileUrl = null; $("ticketFileInput").value = ""; updateTicketFileRow(); };
 $("darkToggle").onclick = () => { darkMode = !darkMode; applyTheme(darkMode); };
 $("addBtn").onclick    = addExpense;
 $("cancelEditBtn").onclick = cancelEdit;
