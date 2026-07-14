@@ -16,6 +16,7 @@
 <style>
   :root{
     --ink:#20283C;--ink-soft:#5A6377;--paper:#FCFBF7;--kraft:#E7E2D6;--kraft-line:#CFC8B7;--accent:#20283C;
+    --accent-soft:#E6E9F0;
     --stamp:#C8453A;--stamp-deep:#9E3329;--green:#2E7D5B;--green-soft:#E4F0E9;--red-soft:#F7E5E2;
     --line:#D9D3C5;--shadow:0 1px 0 rgba(32,40,60,.04), 0 8px 24px -16px rgba(32,40,60,.35);
     --card:#FFFFFF;
@@ -177,6 +178,48 @@
   .ticket-tag.file{background:var(--green-soft);color:var(--green)}
   .ticket-pax-av{display:inline-flex;align-items:center;gap:3px}
   .ticket-empty{text-align:center;padding:18px 10px;color:var(--ink-soft);font-size:13px}
+
+  /* ── savings ── */
+  .savings-private{font-size:12px;color:var(--ink-soft);background:var(--kraft);border:1px solid var(--line);
+    border-radius:9px;padding:8px 12px;margin-bottom:12px;text-align:center}
+  .sv-surplus{display:flex;align-items:baseline;gap:8px;margin:6px 0 2px}
+  .sv-surplus .big{font-family:'Space Mono',monospace;font-weight:700;font-size:30px;color:var(--ink)}
+  .sv-surplus .big.neg{color:var(--stamp)}
+  .sv-surplus .big.pos{color:var(--green)}
+  .sv-flow{display:flex;gap:8px;margin-top:12px}
+  .sv-flow .cell{flex:1;background:var(--kraft);border-radius:10px;padding:10px;text-align:center}
+  .sv-flow .cell .v{font-family:'Space Mono',monospace;font-weight:700;font-size:15px;color:var(--ink)}
+  .sv-flow .cell .l{font-size:10.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+  .sv-line{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .sv-line:last-child{border-bottom:none}
+  .sv-line .nm{flex:1;min-width:0}
+  .sv-line .nm input{border:none;background:none;font-size:14px;font-weight:600;color:var(--ink);width:100%;padding:2px 0;font-family:inherit}
+  .sv-line .amt input{width:92px;text-align:right;padding:6px 8px;font-family:'Space Mono',monospace;font-size:13.5px}
+  .sv-line .rm{border:none;background:none;color:var(--ink-soft);font-size:16px;cursor:pointer;flex:0 0 auto;padding:0 2px}
+  .sv-line .rm:hover{color:var(--stamp)}
+  .sv-add{border:1px dashed var(--line);background:none;color:var(--ink-soft);border-radius:8px;padding:9px;width:100%;
+    font-weight:600;font-size:13px;cursor:pointer;margin-top:10px;font-family:'Bricolage Grotesque',sans-serif}
+  .sv-add:hover{border-color:var(--accent);color:var(--accent)}
+  .sv-assume{display:flex;gap:10px;margin-top:6px}
+  .sv-assume .a{flex:1}
+  .sv-assume label{font-size:11px;color:var(--ink-soft);display:block;margin-bottom:3px}
+  .sv-assume input{width:100%;padding:7px 9px;font-family:'Space Mono',monospace;font-size:13px}
+  .stack-card{border:1px solid var(--line);border-radius:11px;padding:12px 13px;margin-top:10px;background:var(--card);cursor:pointer;transition:.12s}
+  .stack-card:hover{border-color:var(--ink-soft)}
+  .stack-head{display:flex;align-items:center;gap:8px}
+  .stack-emoji{font-size:17px;flex:0 0 auto}
+  .stack-name{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:14.5px;color:var(--ink);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .stack-eta{font-size:11px;font-weight:700;color:var(--ink-soft);background:var(--kraft);border-radius:6px;padding:3px 7px;flex:0 0 auto}
+  .stack-eta.done{background:var(--green-soft);color:var(--green)}
+  .stack-amts{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:12px;color:var(--ink-soft);margin-top:8px}
+  .stack-amts b{color:var(--ink)}
+  .stack-bar{height:8px;border-radius:4px;background:var(--kraft);overflow:hidden;margin-top:5px}
+  .stack-bar .fill{height:100%;background:var(--green);border-radius:4px;transition:width .3s}
+  .stack-bar .fill.invest{background:var(--accent)}
+  .stack-trip{font-size:11px;color:var(--accent);margin-top:6px;font-weight:600}
+  .sv-eta-total{background:var(--accent-soft);border-radius:10px;padding:11px 13px;margin-top:12px;font-size:13px;color:var(--ink);text-align:center}
+  .sv-eta-total b{font-family:'Space Mono',monospace}
+  .sv-curve-wrap{margin-top:8px;overflow-x:auto}
 
   /* ── stats ── */
   .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
@@ -691,6 +734,52 @@
   </div>
 </div>
 
+<!-- ═══════════════════ SAVINGS STACK MODAL ═══════════════════ -->
+<div class="overlay hidden" id="stackModal">
+  <div class="sheet" style="max-height:90vh;overflow-y:auto">
+    <button class="closex" id="stackClose">×</button>
+    <h2 id="stackModalTitle">Add stack</h2>
+
+    <label class="fl">Type</label>
+    <div class="seg" id="stackKindSeg">
+      <button type="button" data-skind="goal"   aria-pressed="true">🎯 Savings goal</button>
+      <button type="button" data-skind="invest" aria-pressed="false">📈 Investment</button>
+    </div>
+    <p class="sub" id="stackKindHint" style="margin-top:6px">A goal fills to a target, then stops. Surplus fills goals in priority order.</p>
+
+    <label class="fl" style="margin-top:10px">Name</label>
+    <input type="text" id="stackName" placeholder="e.g. Emergency fund, Scandinavia trip">
+
+    <div class="row2" style="margin-top:10px">
+      <div id="stackTargetWrap"><label class="fl">Target</label>
+        <div class="amt-input-wrap"><span class="sym">$</span><input type="text" id="stackTarget" inputmode="decimal" placeholder="3500"></div></div>
+      <div><label class="fl">Current balance</label>
+        <div class="amt-input-wrap"><span class="sym">$</span><input type="text" id="stackBalance" inputmode="decimal" placeholder="0"></div></div>
+    </div>
+
+    <div class="row2" style="margin-top:10px">
+      <div><label class="fl" id="stackApyLabel">APY %</label><input type="text" id="stackApy" inputmode="decimal" placeholder="4.0"></div>
+      <div id="stackMonthlyWrap"><label class="fl">Monthly contribution</label>
+        <div class="amt-input-wrap"><span class="sym">$</span><input type="text" id="stackMonthly" inputmode="decimal" placeholder="1000"></div></div>
+    </div>
+
+    <div id="stackPriorityWrap">
+      <label class="fl" style="margin-top:10px">Priority <span style="font-weight:400;text-transform:none">(1 = fill first)</span></label>
+      <input type="text" id="stackPriority" inputmode="numeric" placeholder="1">
+    </div>
+
+    <label class="fl" style="margin-top:10px">Link to a trip <span style="font-weight:400;text-transform:none">(optional)</span></label>
+    <select id="stackTrip" style="width:100%"></select>
+
+    <label class="fl" style="margin-top:10px">Note <span style="font-weight:400;text-transform:none">(optional)</span></label>
+    <input type="text" id="stackNote" placeholder="e.g. Keep liquid in a HYSA">
+
+    <div class="auth-err" id="stackErr"></div>
+    <button class="btn" id="stackSave" style="margin-top:10px;width:100%">Save stack</button>
+    <button class="btn ghost" id="stackDelete" style="margin-top:8px;width:100%;display:none;color:var(--stamp)">Delete stack</button>
+  </div>
+</div>
+
 <!-- ═══════════════════ PRIVACY POLICY ═══════════════════ -->
 <div class="overlay hidden" id="privacyModal">
   <div class="sheet" style="max-height:85vh;overflow-y:auto">
@@ -1090,15 +1179,11 @@
   </section>
 
   <section id="panel-savings" class="hidden">
-    <div class="card">
-      <h2>Trip savings</h2>
-      <p class="sub">Private to you. Figure out how much to set aside and whether you're on pace for the trip.</p>
-      <div class="area-stub">
-        <div class="area-stub-icon">🐷</div>
-        <div class="area-stub-t">Your savings plan lives here</div>
-        <div class="area-stub-x">Income, expenses, current savings &amp; investments, a target date, and the math for how much per week gets you there. Only you can see this.</div>
-      </div>
-    </div>
+    <div class="savings-private">🔒 Private to you — your crew never sees any of this.</div>
+    <div class="card" id="savingsSummaryCard"></div>
+    <div class="card" id="savingsMoneyCard"></div>
+    <div class="card" id="savingsStacksCard"></div>
+    <div class="card" id="savingsCurveCard"></div>
   </section>
 
   <section id="panel-tickets" class="hidden">
@@ -2659,6 +2744,367 @@ async function splitTicketCost() {
   ticketErr("");
 }
 
+/* ══════════════════════════════════════════════════════════════
+   SAVINGS  (private, per-user, global across trips)
+   ══════════════════════════════════════════════════════════════ */
+let savings = null;
+let savingsLoaded = false;
+let myGroupsCache = [];
+let savingsSaveTimer = null;
+
+function savingsDefaults() {
+  return {
+    net_income: null,
+    income_note: "",
+    expenses: [
+      {id:uid(), name:"Insurance",      amount:null},
+      {id:uid(), name:"Subscriptions",  amount:null},
+      {id:uid(), name:"Gas",            amount:null},
+      {id:uid(), name:"Gym",            amount:null},
+      {id:uid(), name:"Phone",          amount:null},
+      {id:uid(), name:"Gifts",          amount:null},
+      {id:uid(), name:"Fun money",      amount:null},
+      {id:uid(), name:"Food & drinks",  amount:null},
+    ],
+    stacks: [
+      {id:uid(), name:"Emergency fund",       kind:"goal",   target:null, balance:0, apy:4.0, monthly:null, priority:1,  tripGroupId:null, note:"Keep liquid in a HYSA"},
+      {id:uid(), name:"Trip fund",            kind:"goal",   target:null, balance:0, apy:4.0, monthly:null, priority:2,  tripGroupId:null, note:""},
+      {id:uid(), name:"Bridge / runway fund", kind:"goal",   target:null, balance:0, apy:4.0, monthly:null, priority:3,  tripGroupId:null, note:"Career-break runway"},
+      {id:uid(), name:"Long-term investment", kind:"invest", target:null, balance:0, apy:7.5, monthly:null, priority:99, tripGroupId:null, note:"S&P index, 5+ yr horizon"},
+    ],
+    windfalls: [],
+    assumptions: {hysaApy:4.0, investReturn:7.5, horizonMonths:36},
+  };
+}
+
+function normalizeSavings(row) {
+  return {
+    net_income:  row.net_income,
+    income_note: row.income_note || "",
+    expenses:    Array.isArray(row.expenses)  ? row.expenses  : [],
+    stacks:      Array.isArray(row.stacks)    ? row.stacks    : [],
+    windfalls:   Array.isArray(row.windfalls) ? row.windfalls : [],
+    assumptions: Object.assign({hysaApy:4.0, investReturn:7.5, horizonMonths:36}, row.assumptions || {}),
+  };
+}
+
+async function loadSavings() {
+  if (!sb || !meId) return;
+  const {data, error} = await sb.from("savings_profiles").select("*").eq("user_id", meId).maybeSingle();
+  if (error) { console.error("savings load:", error); }
+  if (data) {
+    savings = normalizeSavings(data);
+  } else {
+    savings = savingsDefaults();
+    await sb.from("savings_profiles").insert({user_id: meId, ...savings}).then(({error}) => {
+      if (error) console.error("savings seed:", error);
+    });
+  }
+  savingsLoaded = true;
+  await fetchMyGroups();
+}
+
+function saveSavingsSoon() {
+  flashSaved();
+  clearTimeout(savingsSaveTimer);
+  savingsSaveTimer = setTimeout(saveSavingsNow, 600);
+}
+async function saveSavingsNow() {
+  if (!sb || !meId || !savings) return;
+  const {error} = await sb.from("savings_profiles").upsert({
+    user_id: meId,
+    net_income:  savings.net_income,
+    income_note: savings.income_note || null,
+    expenses:    savings.expenses,
+    stacks:      savings.stacks,
+    windfalls:   savings.windfalls,
+    assumptions: savings.assumptions,
+    updated_at:  new Date().toISOString(),
+  }, {onConflict:"user_id"});
+  if (error) console.error("savings save:", error);
+}
+
+async function fetchMyGroups() {
+  if (!sb || !meId) return [];
+  const {data} = await sb.from("group_members").select("group_id, groups(id,name,code)").eq("user_id", meId);
+  myGroupsCache = (data || []).map(r => r.groups).filter(Boolean);
+  return myGroupsCache;
+}
+function groupName(gid) { const g = myGroupsCache.find(x => x.id === gid); return g ? g.name : ""; }
+
+/* ── the engine ── */
+function savingsSurplus() {
+  const inc = Number(savings.net_income) || 0;
+  const exp = (savings.expenses || []).reduce((s,e) => s + (Number(e.amount)||0), 0);
+  const investMonthly = (savings.stacks || []).filter(s => s.kind==="invest")
+    .reduce((s,x) => s + (Number(x.monthly)||0), 0);
+  return {inc, exp, investMonthly, surplus: inc - exp - investMonthly};
+}
+
+/* month-by-month simulation: growth + invest contributions + windfalls +
+   sequential waterfall of the monthly surplus into goals by priority */
+function simulateSavings(months) {
+  const A = savings.assumptions || {};
+  const {surplus} = savingsSurplus();
+  const stacks = savings.stacks || [];
+  const goals   = stacks.filter(s => s.kind==="goal").sort((a,b) => (a.priority||0)-(b.priority||0));
+  const invests = stacks.filter(s => s.kind==="invest");
+  const bal = {}; stacks.forEach(s => bal[s.id] = Number(s.balance)||0);
+  const fundedAt = {};
+  goals.forEach(g => { const t=Number(g.target)||0; if (t>0 && bal[g.id]>=t-0.01) fundedAt[g.id]=0; });
+
+  const series = [{m:0, total: Object.values(bal).reduce((a,b)=>a+b,0)}];
+  for (let m=1; m<=months; m++) {
+    stacks.forEach(s => {
+      const base = s.kind==="invest" ? (Number(s.apy)||A.investReturn||7.5) : (Number(s.apy)||A.hysaApy||4);
+      bal[s.id] += bal[s.id] * (base/100/12);
+    });
+    invests.forEach(s => bal[s.id] += Number(s.monthly)||0);
+    (savings.windfalls||[]).forEach(w => { if ((Number(w.month)||0)===m && bal[w.stackId]!=null) bal[w.stackId] += Number(w.amount)||0; });
+    let pour = Math.max(0, surplus);
+    for (const g of goals) {
+      if (pour<=0) break;
+      const tgt = Number(g.target)||0; if (tgt<=0) continue;
+      const room = tgt - bal[g.id]; if (room<=0) continue;
+      const add = Math.min(room, pour); bal[g.id] += add; pour -= add;
+    }
+    goals.forEach(g => { const t=Number(g.target)||0; if (t>0 && fundedAt[g.id]==null && bal[g.id]>=t-0.01) fundedAt[g.id]=m; });
+    series.push({m, total: Object.values(bal).reduce((a,b)=>a+b,0)});
+  }
+  return {series, fundedAt};
+}
+
+function etaLabel(m) {
+  if (m == null) return null;
+  if (m === 0)   return "funded";
+  if (m < 12)    return `${m} mo`;
+  return `${(m/12).toFixed(1)} yr`;
+}
+
+/* ── render ── */
+function renderSavings() {
+  if (!savings) { return; }
+  renderSavingsMoney();
+  renderSavingsComputed();
+}
+
+/* summary + stacks + curve (safe to re-render while editing money inputs) */
+function renderSavingsComputed() {
+  if (!savings) return;
+  const {inc, exp, investMonthly, surplus} = savingsSurplus();
+  const horizon = Math.min(600, Math.max(12, Number(savings.assumptions.horizonMonths)||36));
+  const sim = simulateSavings(horizon);
+
+  /* summary */
+  const sc = $("savingsSummaryCard");
+  const cls = surplus>0.5 ? "pos" : (surplus<-0.5 ? "neg" : "");
+  sc.innerHTML = `
+    <h2 style="margin:0">Monthly surplus</h2>
+    <div class="sv-surplus"><span class="big ${cls}">${surplus<0?"-":""}${fmtUSD(Math.abs(surplus))}</span><span class="sub" style="margin:0">left to fill your stacks each month</span></div>
+    <div class="sv-flow">
+      <div class="cell"><div class="v">${fmtUSD(inc)}</div><div class="l">take-home</div></div>
+      <div class="cell"><div class="v">${fmtUSD(exp)}</div><div class="l">expenses</div></div>
+      <div class="cell"><div class="v">${fmtUSD(investMonthly)}</div><div class="l">investing</div></div>
+    </div>`;
+
+  /* stacks */
+  const goals = (savings.stacks||[]).filter(s=>s.kind==="goal").sort((a,b)=>(a.priority||0)-(b.priority||0));
+  const invests = (savings.stacks||[]).filter(s=>s.kind==="invest");
+  const stackCard = $("savingsStacksCard");
+  const stackRow = s => {
+    const bal = Number(s.balance)||0, tgt = Number(s.target)||0;
+    const invest = s.kind==="invest";
+    const pct = invest ? 100 : (tgt>0 ? Math.min(100, Math.round(bal/tgt*100)) : 0);
+    const eta = invest ? null : etaLabel(sim.fundedAt[s.id]);
+    const etaCls = sim.fundedAt[s.id]===0 ? " done" : "";
+    const trip = s.tripGroupId ? `<div class="stack-trip">🧭 ${escHtml(groupName(s.tripGroupId)||"trip")}</div>` : "";
+    return `<div class="stack-card" data-stack="${s.id}">
+      <div class="stack-head">
+        <span class="stack-emoji">${invest?"📈":"🎯"}</span>
+        <span class="stack-name">${escHtml(s.name||"Stack")}</span>
+        ${invest ? `<span class="stack-eta">${(Number(s.apy)||0).toFixed(1)}%</span>` : (eta?`<span class="stack-eta${etaCls}">${eta}</span>`:"")}
+      </div>
+      <div class="stack-amts"><span><b>${fmtUSD(bal)}</b>${invest?" balance":` of ${fmtUSD(tgt)}`}</span>${invest?`<span>+${fmtUSD(Number(s.monthly)||0)}/mo</span>`:`<span>${pct}%</span>`}</div>
+      <div class="stack-bar"><div class="fill${invest?" invest":""}" style="width:${pct}%"></div></div>
+      ${trip}
+    </div>`;
+  };
+  const allGoalsFunded = goals.filter(g=>(Number(g.target)||0)>0);
+  const lastFund = allGoalsFunded.length ? Math.max(...allGoalsFunded.map(g=>sim.fundedAt[g.id]==null?Infinity:sim.fundedAt[g.id])) : null;
+  let etaTotal = "";
+  if (lastFund!=null && lastFund!==Infinity) etaTotal = `<div class="sv-eta-total">All goals funded in <b>${etaLabel(lastFund)}</b> — while still investing ${fmtUSD(investMonthly)}/mo.</div>`;
+  else if (surplus<=0) etaTotal = `<div class="sv-eta-total">Your surplus is ${fmtUSD(surplus)} — add income or trim expenses to start filling goals.</div>`;
+  else if (lastFund===Infinity) etaTotal = `<div class="sv-eta-total">Some goals aren't funded within ${horizon} months at this pace.</div>`;
+
+  stackCard.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <h2 style="margin:0">Stacks</h2>
+      <button class="btn" id="addStackBtn" style="width:auto;margin:0;padding:8px 14px">+ Add</button>
+    </div>
+    <p class="sub" style="margin-top:6px">Surplus fills goals top-to-bottom by priority. Investments grow on their own.</p>
+    ${goals.map(stackRow).join("") || `<div class="ticket-empty">No goals yet.</div>`}
+    ${invests.length?`<div class="sh-section-title" style="margin-top:14px">Investments</div>${invests.map(stackRow).join("")}`:""}
+    ${etaTotal}`;
+  $("addStackBtn").onclick = () => openStackModal(null);
+  stackCard.querySelectorAll("[data-stack]").forEach(el => el.onclick = () => openStackModal(el.dataset.stack));
+
+  /* growth curve */
+  $("savingsCurveCard").innerHTML = `
+    <h2 style="margin:0 0 2px">Projected growth</h2>
+    <p class="sub">Total across every stack, ${horizon} months out, with growth + contributions.</p>
+    <div class="sv-curve-wrap">${savingsCurveSVG(sim.series)}</div>`;
+}
+
+function renderSavingsMoney() {
+  const el = $("savingsMoneyCard");
+  const A = savings.assumptions || {};
+  el.innerHTML = `
+    <h2 style="margin:0">Money in &amp; out</h2>
+    <label class="fl" style="margin-top:10px">Monthly take-home</label>
+    <div class="amt-input-wrap"><span class="sym">$</span><input type="text" id="svIncome" inputmode="decimal" placeholder="4750" value="${savings.net_income!=null?savings.net_income:""}"></div>
+
+    <label class="fl" style="margin-top:12px">Fixed monthly expenses</label>
+    <div id="svExpenseList">${(savings.expenses||[]).map(e => `
+      <div class="sv-line" data-exp="${e.id}">
+        <span class="nm"><input type="text" data-exp-name value="${escHtml(e.name||"")}" placeholder="Category"></span>
+        <span class="amt"><input type="text" data-exp-amt inputmode="decimal" value="${e.amount!=null?e.amount:""}" placeholder="0"></span>
+        <button class="rm" data-exp-rm title="Remove">×</button>
+      </div>`).join("")}</div>
+    <button class="sv-add" id="svAddExpense">+ Add a category</button>
+
+    <label class="fl" style="margin-top:14px">Assumptions</label>
+    <div class="sv-assume">
+      <div class="a"><label>HYSA APY %</label><input type="text" id="svHysa" inputmode="decimal" value="${A.hysaApy!=null?A.hysaApy:4}"></div>
+      <div class="a"><label>Invest return %</label><input type="text" id="svReturn" inputmode="decimal" value="${A.investReturn!=null?A.investReturn:7.5}"></div>
+      <div class="a"><label>Horizon (mo)</label><input type="text" id="svHorizon" inputmode="numeric" value="${A.horizonMonths!=null?A.horizonMonths:36}"></div>
+    </div>`;
+
+  const num = v => { const n = parseFloat(String(v).replace(/[^0-9.\-]/g,"")); return isNaN(n)?null:n; };
+  $("svIncome").oninput = e => { savings.net_income = num(e.target.value); renderSavingsComputed(); saveSavingsSoon(); };
+  el.querySelectorAll("[data-exp]").forEach(row => {
+    const id = row.dataset.exp;
+    const ex = () => (savings.expenses||[]).find(x=>x.id===id);
+    row.querySelector("[data-exp-name]").oninput = e => { const x=ex(); if(x){x.name=e.target.value; saveSavingsSoon();} };
+    row.querySelector("[data-exp-amt]").oninput  = e => { const x=ex(); if(x){x.amount=num(e.target.value); renderSavingsComputed(); saveSavingsSoon();} };
+    row.querySelector("[data-exp-rm]").onclick    = () => { savings.expenses = (savings.expenses||[]).filter(x=>x.id!==id); renderSavings(); saveSavingsSoon(); };
+  });
+  $("svAddExpense").onclick = () => { (savings.expenses = savings.expenses||[]).push({id:uid(), name:"", amount:null}); renderSavings(); };
+  $("svHysa").oninput    = e => { savings.assumptions.hysaApy = num(e.target.value); renderSavingsComputed(); saveSavingsSoon(); };
+  $("svReturn").oninput  = e => { savings.assumptions.investReturn = num(e.target.value); renderSavingsComputed(); saveSavingsSoon(); };
+  $("svHorizon").oninput = e => { savings.assumptions.horizonMonths = num(e.target.value); renderSavingsComputed(); saveSavingsSoon(); };
+}
+
+function savingsCurveSVG(series) {
+  const W=340, H=150, pad=28;
+  const maxY = Math.max(1, ...series.map(p=>p.total));
+  const months = series[series.length-1].m || 1;
+  const x = m => pad + (m/months)*(W-pad-8);
+  const y = v => (H-pad) - (v/maxY)*(H-pad-10);
+  const pts = series.map(p => `${x(p.m).toFixed(1)},${y(p.total).toFixed(1)}`);
+  const line = "M" + pts.join(" L");
+  const area = `M${x(0).toFixed(1)},${(H-pad).toFixed(1)} L` + pts.join(" L") + ` L${x(months).toFixed(1)},${(H-pad).toFixed(1)} Z`;
+  const yTicks = [0, maxY/2, maxY].map(v =>
+    `<text x="2" y="${(y(v)+3).toFixed(1)}" font-size="8" fill="var(--ink-soft)">${v>=1000?"$"+Math.round(v/1000)+"k":"$"+Math.round(v)}</text>`).join("");
+  const xTicks = [0, Math.round(months/2), months].map(m =>
+    `<text x="${x(m).toFixed(1)}" y="${H-8}" font-size="8" fill="var(--ink-soft)" text-anchor="middle">${m}mo</text>`).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" style="max-width:520px">
+    <line x1="${pad}" y1="${H-pad}" x2="${W-4}" y2="${H-pad}" stroke="var(--line)" stroke-width="1"/>
+    <path d="${area}" fill="var(--accent-soft)" opacity="0.6"/>
+    <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+    ${yTicks}${xTicks}
+  </svg>`;
+}
+
+/* ── stack modal ── */
+let stackEditId = null;
+let stackKind = "goal";
+
+function setStackKind(k) {
+  stackKind = k;
+  $("stackKindSeg").querySelectorAll("[data-skind]").forEach(b => b.setAttribute("aria-pressed", b.dataset.skind===k?"true":"false"));
+  const invest = k==="invest";
+  $("stackKindHint").textContent = invest
+    ? "An investment grows on its own from its balance + monthly contribution — it isn't filled by your surplus and has no target."
+    : "A goal fills to a target, then stops. Surplus fills goals in priority order.";
+  $("stackTargetWrap").style.display   = invest ? "none" : "";
+  $("stackPriorityWrap").style.display = invest ? "none" : "";
+  $("stackMonthlyWrap").style.display  = invest ? "" : "none";
+  $("stackApyLabel").textContent = invest ? "Return %/yr" : "APY %";
+}
+
+function populateStackTrip(selected) {
+  const sel = $("stackTrip");
+  sel.innerHTML = `<option value="">— none —</option>` +
+    myGroupsCache.map(g => `<option value="${g.id}"${g.id===selected?" selected":""}>${escHtml(g.name)}</option>`).join("");
+}
+
+function openStackModal(id) {
+  $("stackErr").textContent = "";
+  populateStackTrip(null);
+  if (id) {
+    const s = (savings.stacks||[]).find(x=>x.id===id); if (!s) return;
+    stackEditId = id;
+    $("stackModalTitle").textContent = "Edit stack";
+    setStackKind(s.kind||"goal");
+    $("stackName").value     = s.name||"";
+    $("stackTarget").value   = s.target!=null?s.target:"";
+    $("stackBalance").value  = s.balance!=null?s.balance:"";
+    $("stackApy").value      = s.apy!=null?s.apy:"";
+    $("stackMonthly").value  = s.monthly!=null?s.monthly:"";
+    $("stackPriority").value = s.priority!=null?s.priority:"";
+    $("stackNote").value     = s.note||"";
+    populateStackTrip(s.tripGroupId||null);
+    $("stackDelete").style.display = "";
+  } else {
+    stackEditId = null;
+    $("stackModalTitle").textContent = "Add stack";
+    setStackKind("goal");
+    $("stackName").value=""; $("stackTarget").value=""; $("stackBalance").value="0";
+    $("stackApy").value="4.0"; $("stackMonthly").value=""; $("stackNote").value="";
+    const maxP = Math.max(0, ...(savings.stacks||[]).filter(s=>s.kind==="goal").map(s=>Number(s.priority)||0));
+    $("stackPriority").value = maxP+1;
+    $("stackDelete").style.display = "none";
+  }
+  $("stackModal").classList.remove("hidden");
+}
+function closeStackModal() { $("stackModal").classList.add("hidden"); }
+
+function saveStack() {
+  const num = v => { const n = parseFloat(String(v).replace(/[^0-9.\-]/g,"")); return isNaN(n)?null:n; };
+  const name = $("stackName").value.trim();
+  if (!name) { $("stackErr").textContent = "Give the stack a name."; return; }
+  const s = {
+    id: stackEditId || uid(),
+    name,
+    kind: stackKind,
+    target:  stackKind==="goal" ? num($("stackTarget").value) : null,
+    balance: num($("stackBalance").value) || 0,
+    apy:     num($("stackApy").value),
+    monthly: stackKind==="invest" ? num($("stackMonthly").value) : null,
+    priority: stackKind==="goal" ? (num($("stackPriority").value)||1) : 99,
+    tripGroupId: $("stackTrip").value || null,
+    note: $("stackNote").value.trim(),
+  };
+  savings.stacks = savings.stacks || [];
+  if (stackEditId) {
+    const i = savings.stacks.findIndex(x=>x.id===stackEditId);
+    if (i>=0) savings.stacks[i] = s;
+  } else {
+    savings.stacks.push(s);
+  }
+  saveSavingsSoon();
+  renderSavings();
+  closeStackModal();
+}
+function deleteStack() {
+  if (!stackEditId) return;
+  if (!confirm("Delete this stack?")) return;
+  savings.stacks = (savings.stacks||[]).filter(x=>x.id!==stackEditId);
+  saveSavingsSoon();
+  renderSavings();
+  closeStackModal();
+}
+
 function renderCoverageSection() {
   const parts = [...ui.participants];
   const sec = $("coverageSection");
@@ -3333,6 +3779,10 @@ function switchArea(area) {
   } else {
     const el = $("panel-" + area); if (el) el.classList.remove("hidden");
   }
+  if (area === "savings") {
+    if (!savingsLoaded) loadSavings().then(renderSavings);
+    else renderSavings();
+  }
   window.scrollTo(0, 0);
 }
 
@@ -3597,6 +4047,13 @@ $("ticketFileInput").onchange = e => {
   ticketFile = f; ticketErr(""); updateTicketFileRow();
 };
 $("ticketFileClear").onclick = () => { ticketFile = null; ticketFileUrl = null; $("ticketFileInput").value = ""; updateTicketFileRow(); };
+
+/* ── savings wiring ── */
+$("stackClose").onclick  = closeStackModal;
+$("stackModal").onclick  = e => { if (e.target === $("stackModal")) closeStackModal(); };
+$("stackSave").onclick   = saveStack;
+$("stackDelete").onclick = deleteStack;
+$("stackKindSeg").querySelectorAll("[data-skind]").forEach(b => b.onclick = () => setStackKind(b.dataset.skind));
 $("darkToggle").onclick = () => { darkMode = !darkMode; applyTheme(darkMode); };
 $("addBtn").onclick    = addExpense;
 $("cancelEditBtn").onclick = cancelEdit;
