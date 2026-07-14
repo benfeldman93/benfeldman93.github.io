@@ -246,6 +246,32 @@
   .bg-cat .capin{flex:0 0 auto;width:78px}
   .bg-cat .capin input{width:100%;padding:6px 8px;font-family:'Space Mono',monospace;font-size:12.5px;text-align:right}
 
+  /* ── chat ── */
+  .chat-badge{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:9px;background:var(--stamp);
+    color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;line-height:1;box-sizing:border-box}
+  .chat-panel{position:fixed;inset:0;z-index:120;background:var(--paper);display:flex;flex-direction:column;
+    max-width:560px;margin:0 auto;box-shadow:0 0 40px rgba(0,0,0,.15);transform:translateX(0);transition:transform .22s ease}
+  .chat-panel.hidden{transform:translateX(100%);display:flex}
+  .chat-head{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--ink);color:var(--paper);flex:0 0 auto;padding-top:calc(14px + env(safe-area-inset-top))}
+  .chat-back{background:rgba(252,251,247,.14);border:none;color:var(--paper);width:32px;height:32px;border-radius:8px;font-size:18px;cursor:pointer;flex:0 0 auto}
+  .chat-title{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:16px}
+  .chat-sub{font-size:11.5px;color:rgba(252,251,247,.6);margin-top:1px}
+  .chat-scroll{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:3px}
+  .chat-day{align-self:center;font-size:11px;color:var(--ink-soft);background:var(--kraft);border-radius:10px;padding:3px 10px;margin:10px 0 6px}
+  .chat-msg{max-width:78%;display:flex;flex-direction:column;margin-top:2px}
+  .chat-msg.mine{align-self:flex-end;align-items:flex-end}
+  .chat-msg .who{font-size:11px;color:var(--ink-soft);margin:6px 0 2px 10px;font-weight:600}
+  .chat-bubble{padding:9px 13px;border-radius:15px;font-size:14.5px;line-height:1.35;word-break:break-word;white-space:pre-wrap}
+  .chat-msg:not(.mine) .chat-bubble{background:var(--card);border:1px solid var(--line);border-bottom-left-radius:5px;color:var(--ink)}
+  .chat-msg.mine .chat-bubble{background:var(--accent);color:#fff;border-bottom-right-radius:5px}
+  .chat-time{font-size:10px;color:var(--ink-soft);margin:2px 8px 0}
+  .chat-empty{text-align:center;color:var(--ink-soft);font-size:13px;margin:auto;padding:30px 20px}
+  .chat-input-row{flex:0 0 auto;display:flex;align-items:flex-end;gap:8px;padding:10px 12px;border-top:1px solid var(--line);
+    background:var(--card);padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+  .chat-input-row textarea{flex:1;resize:none;max-height:120px;border-radius:20px;padding:10px 14px;font-size:15px;line-height:1.3}
+  .chat-send{flex:0 0 auto;width:42px;height:42px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:17px;cursor:pointer}
+  .chat-send:disabled{opacity:.4;cursor:default}
+
   /* ── stats ── */
   .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
   .stat-tile{background:var(--kraft);border-radius:12px;padding:14px;text-align:center}
@@ -1021,7 +1047,8 @@
         background:rgba(252,251,247,.14);border:1px solid rgba(252,251,247,.2);border-radius:6px;
         padding:2px 7px;letter-spacing:.06em;"></span>
       <span id="loggedUserLabel" style="font-size:10px;opacity:.65"></span>
-      <button id="headerSwitchBtn" style="margin-left:auto;background:rgba(252,251,247,.14);border:1px solid rgba(252,251,247,.22);border-radius:7px;color:rgba(252,251,247,.85);font-size:11px;font-weight:600;padding:3px 9px;cursor:pointer;font-family:inherit">⇄ Groups</button>
+      <button class="gear" id="chatBtn" aria-label="Chat" style="margin-left:auto;position:relative">💬<span id="chatBadge" class="chat-badge hidden"></span></button>
+      <button id="headerSwitchBtn" style="background:rgba(252,251,247,.14);border:1px solid rgba(252,251,247,.22);border-radius:7px;color:rgba(252,251,247,.85);font-size:11px;font-weight:600;padding:3px 9px;cursor:pointer;font-family:inherit">⇄ Groups</button>
       <button class="gear" id="gearBtn" aria-label="Settings">⚙</button>
       <button class="logout-btn" id="logoutBtn">Log out</button>
     </div>
@@ -1256,6 +1283,19 @@
       <span class="bn-lbl">Crew</span>
     </button>
   </nav>
+</div>
+
+<!-- ═══════════════════ GROUP CHAT ═══════════════════ -->
+<div class="chat-panel hidden" id="chatPanel">
+  <div class="chat-head">
+    <button class="chat-back" id="chatClose" aria-label="Close">←</button>
+    <div><div class="chat-title">Group chat</div><div class="chat-sub" id="chatSub"></div></div>
+  </div>
+  <div class="chat-scroll" id="chatScroll"></div>
+  <div class="chat-input-row">
+    <textarea id="chatInput" rows="1" placeholder="Message the group…" autocomplete="off"></textarea>
+    <button id="chatSend" class="chat-send" aria-label="Send">➤</button>
+  </div>
 </div>
 
 <div class="save-flag" id="saveFlag">Saved</div>
@@ -1558,6 +1598,7 @@ function showApp() {
   });
   subscribePush();
   initOnboarding();
+  initChat(GROUP_ID);
 }
 
 async function logout() {
@@ -3232,6 +3273,103 @@ function persistBudgetSoon() {
 /* itinerary render — full implementation added with the Itinerary feature */
 function renderItinerary() {}
 
+/* ══════════════════════════════════════════════════════════════
+   CHAT  (group messages, realtime)
+   ══════════════════════════════════════════════════════════════ */
+let chatMessages = [];
+let chatChannel = null;
+let chatOpen = false;
+
+async function initChat(groupId) {
+  teardownChat();
+  closeChat();
+  chatMessages = [];
+  const {data, error} = await sb.from("messages").select("*").eq("group_id", groupId).order("created_at", {ascending:true}).limit(300);
+  if (error) console.error("chat load:", error);
+  chatMessages = (data||[]).map(m => ({id:m.id, userId:m.user_id, body:m.body, ts:new Date(m.created_at).getTime()}));
+  updateChatBadge();
+  chatChannel = sb.channel(`chat-${groupId}`)
+    .on("postgres_changes", {event:"INSERT", schema:"public", table:"messages", filter:`group_id=eq.${groupId}`}, payload => {
+      const m = payload.new;
+      if (chatMessages.some(x => x.id === m.id)) return;
+      chatMessages.push({id:m.id, userId:m.user_id, body:m.body, ts:new Date(m.created_at).getTime()});
+      if (chatOpen) { renderChat(); markChatRead(); }
+      else updateChatBadge();
+    })
+    .subscribe();
+}
+function teardownChat() { if (chatChannel) { sb.removeChannel(chatChannel); chatChannel = null; } }
+
+function chatDayLabel(ts) {
+  const d = new Date(ts).toDateString();
+  if (d === new Date().toDateString()) return "Today";
+  if (d === new Date(Date.now()-864e5).toDateString()) return "Yesterday";
+  return new Date(ts).toLocaleDateString(undefined, {weekday:"short", month:"short", day:"numeric"});
+}
+function chatTime(ts) {
+  return new Date(ts).toLocaleTimeString(undefined, {hour:"numeric", minute:"2-digit"});
+}
+
+function renderChat() {
+  const el = $("chatScroll"); if (!el) return;
+  $("chatSub").textContent = state.tripName || "";
+  if (!chatMessages.length) { el.innerHTML = `<div class="chat-empty">No messages yet — say hi 👋</div>`; return; }
+  let html = "", lastDay = "";
+  chatMessages.forEach((m, i) => {
+    const day = new Date(m.ts).toDateString();
+    if (day !== lastDay) { html += `<div class="chat-day">${chatDayLabel(m.ts)}</div>`; lastDay = day; }
+    const mine = m.userId === meId;
+    const prev = chatMessages[i-1];
+    const showWho = !mine && (!prev || prev.userId !== m.userId || new Date(prev.ts).toDateString() !== day);
+    html += `<div class="chat-msg${mine?" mine":""}">
+      ${showWho ? `<div class="who">${escHtml(nameOf(m.userId))}</div>` : ""}
+      <div class="chat-bubble">${escHtml(m.body)}</div>
+      <div class="chat-time">${chatTime(m.ts)}</div>
+    </div>`;
+  });
+  el.innerHTML = html;
+  el.scrollTop = el.scrollHeight;
+}
+
+async function sendChatMessage() {
+  const inp = $("chatInput"); const body = inp.value.trim();
+  if (!body || !sb || !GROUP_ID) return;
+  inp.value = ""; autoGrowChat();
+  const id = uid();
+  chatMessages.push({id, userId:meId, body, ts:Date.now()});
+  renderChat(); markChatRead();
+  const {error} = await sb.from("messages").insert({id, group_id:GROUP_ID, user_id:meId, body});
+  if (error) { console.error("chat send:", error); }
+  else sb.functions.invoke('notify-group', {body:{groupId:GROUP_ID, expenseDesc:body, payerName:nameOf(meId)+" 💬"}}).catch(()=>{});
+}
+
+function openChat() {
+  if (!GROUP_ID) return;
+  chatOpen = true;
+  $("chatPanel").classList.remove("hidden");
+  renderChat(); markChatRead();
+  setTimeout(() => $("chatInput") && $("chatInput").focus(), 120);
+}
+function closeChat() { chatOpen = false; const p = $("chatPanel"); if (p) p.classList.add("hidden"); }
+
+function markChatRead() {
+  if (!GROUP_ID) return;
+  const last = chatMessages.length ? chatMessages[chatMessages.length-1].ts : Date.now();
+  localStorage.setItem("ss_chatread_" + GROUP_ID, String(last));
+  updateChatBadge();
+}
+function updateChatBadge() {
+  const badge = $("chatBadge"); if (!badge || !GROUP_ID) return;
+  const lastRead = Number(localStorage.getItem("ss_chatread_" + GROUP_ID) || 0);
+  const unread = chatMessages.filter(m => m.ts > lastRead && m.userId !== meId).length;
+  if (unread > 0) { badge.textContent = unread > 99 ? "99+" : unread; badge.classList.remove("hidden"); }
+  else badge.classList.add("hidden");
+}
+function autoGrowChat() {
+  const t = $("chatInput"); if (!t) return;
+  t.style.height = "auto"; t.style.height = Math.min(120, t.scrollHeight) + "px";
+}
+
 function renderCoverageSection() {
   const parts = [...ui.participants];
   const sec = $("coverageSection");
@@ -4181,6 +4319,13 @@ $("stackModal").onclick  = e => { if (e.target === $("stackModal")) closeStackMo
 $("stackSave").onclick   = saveStack;
 $("stackDelete").onclick = deleteStack;
 $("stackKindSeg").querySelectorAll("[data-skind]").forEach(b => b.onclick = () => setStackKind(b.dataset.skind));
+
+/* ── chat wiring ── */
+$("chatBtn").onclick   = openChat;
+$("chatClose").onclick = closeChat;
+$("chatSend").onclick  = sendChatMessage;
+$("chatInput").oninput = autoGrowChat;
+$("chatInput").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } };
 $("darkToggle").onclick = () => { darkMode = !darkMode; applyTheme(darkMode); };
 $("addBtn").onclick    = addExpense;
 $("cancelEditBtn").onclick = cancelEdit;
