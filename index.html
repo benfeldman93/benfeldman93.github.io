@@ -1375,15 +1375,41 @@ const CUR_SYM      = {EUR:"€",USD:"$",GBP:"£",DKK:"kr",CZK:"Kč",CHF:"CHF",SE
 const AVATAR_COLORS= ["#C8453A","#2E7D5B","#3A5DA8","#B5762B","#7A4B9E","#1F8A8A","#A6453F","#4A7C3F"];
 const EXP_ICONS    = ["🍽️","🚆","🏨","🍻","🛒","🎟️","☕","⛽","🚕","🥐"];
 const CATEGORIES   = [
-  {key:"food",       icon:"🍽️", label:"Food"},
-  {key:"drinks",     icon:"🍻", label:"Drinks"},
-  {key:"transport",  icon:"🚆", label:"Transport"},
-  {key:"lodging",    icon:"🏨", label:"Lodging"},
-  {key:"activities", icon:"🎟️", label:"Activities"},
-  {key:"groceries",  icon:"🛒", label:"Groceries"},
-  {key:"coffee",     icon:"☕", label:"Coffee"},
-  {key:"taxi",       icon:"🚕", label:"Taxi"},
-  {key:"other",      icon:"💸", label:"Other"},
+  /* food & drink */
+  {key:"food",          icon:"🍽️", label:"Food"},
+  {key:"restaurants",   icon:"🍝", label:"Dining"},
+  {key:"groceries",     icon:"🛒", label:"Groceries"},
+  {key:"snacks",        icon:"🍿", label:"Snacks"},
+  {key:"coffee",        icon:"☕", label:"Coffee"},
+  {key:"drinks",        icon:"🍻", label:"Drinks"},
+  {key:"nightlife",     icon:"🍸", label:"Nightlife"},
+  /* getting around */
+  {key:"transport",     icon:"🚆", label:"Transport"},
+  {key:"flights",       icon:"✈️", label:"Flights"},
+  {key:"taxi",          icon:"🚕", label:"Taxi"},
+  {key:"rental",        icon:"🚗", label:"Car rental"},
+  {key:"fuel",          icon:"⛽", label:"Fuel"},
+  {key:"parking",       icon:"🅿️", label:"Parking"},
+  /* stay */
+  {key:"lodging",       icon:"🏨", label:"Lodging"},
+  /* things to do */
+  {key:"activities",    icon:"🎟️", label:"Activities"},
+  {key:"sightseeing",   icon:"📸", label:"Sightseeing"},
+  {key:"tours",         icon:"🗺️", label:"Tours"},
+  {key:"entertainment", icon:"🎭", label:"Entertainment"},
+  {key:"wellness",      icon:"💆", label:"Wellness"},
+  /* shopping & people */
+  {key:"shopping",      icon:"🛍️", label:"Shopping"},
+  {key:"gifts",         icon:"🎁", label:"Gifts"},
+  {key:"souvenirs",     icon:"🧸", label:"Souvenirs"},
+  /* practical */
+  {key:"health",        icon:"💊", label:"Health"},
+  {key:"phone",         icon:"📱", label:"Phone/SIM"},
+  {key:"laundry",       icon:"🧺", label:"Laundry"},
+  {key:"fees",          icon:"💳", label:"Fees"},
+  {key:"tips",          icon:"🪙", label:"Tips"},
+  {key:"insurance",     icon:"🛡️", label:"Insurance"},
+  {key:"other",         icon:"💸", label:"Other"},
 ];
 
 /* ══ app state ══ */
