@@ -143,13 +143,45 @@
     border-radius:7px;padding:5px 9px;font-size:11px;font-weight:600;cursor:pointer}
 
   /* ── bottom nav ── */
-  .bottom-nav{position:fixed;bottom:0;left:0;right:0;height:64px;background:var(--card);border-top:1px solid var(--line);display:flex;align-items:stretch;z-index:50;padding-bottom:env(safe-area-inset-bottom)}
-  .bn-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:none;border:none;cursor:pointer;color:var(--ink-soft);font-family:inherit;padding:0;transition:.15s}
-  .bn-btn.active{color:var(--accent)}
-  .bn-icon{font-size:19px;line-height:1}
-  .bn-lbl{font-size:9.5px;font-weight:600;letter-spacing:.01em}
-  .bn-add{background:var(--accent);border-radius:16px;width:52px;height:44px;flex:0 0 52px;color:#fff !important;margin:0 8px;font-size:26px;align-self:center;padding-bottom:0}
-  .bn-add .bn-icon{font-size:28px;line-height:1}
+  .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--paper);border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-evenly;z-index:50;padding:8px 10px calc(10px + env(safe-area-inset-bottom))}
+  .dk-btn{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;color:var(--ink-soft);font-family:var(--font-ui);padding:4px 14px;transition:.15s}
+  .dk-btn svg{width:22px;height:22px}
+  .dk-btn span{font-size:10px;font-weight:650}
+  .dk-btn.active{color:var(--accent)}
+  .dk-add{width:48px;height:48px;border-radius:16px;border:none;background:var(--ink);color:var(--paper);display:grid;place-items:center;cursor:pointer;box-shadow:0 8px 20px -8px rgba(20,25,35,.5)}
+  .dk-add svg{width:22px;height:22px}
+  /* ── drawer ── */
+  .drawer-dim{position:fixed;inset:0;background:rgba(13,18,32,.4);z-index:110;opacity:1;transition:opacity .2s}
+  .drawer-dim.hidden{display:block;opacity:0;pointer-events:none}
+  .drawer{position:fixed;top:0;bottom:0;left:0;width:min(320px,84vw);background:var(--card);z-index:111;border-radius:0 24px 24px 0;box-shadow:18px 0 44px -18px rgba(10,16,36,.35);display:flex;flex-direction:column;padding-top:calc(12px + env(safe-area-inset-top));transform:translateX(0);transition:transform .22s ease}
+  .drawer.hidden{display:flex;transform:translateX(-105%);box-shadow:none}
+  .dr-head{display:flex;align-items:center;justify-content:space-between;padding:10px 18px 12px}
+  .dr-wm{font-family:var(--font-display);font-size:16px;font-weight:800}
+  .dr-x{width:28px;height:28px;border-radius:9px;background:var(--kraft);border:none;color:var(--ink-soft);cursor:pointer;font-size:13px}
+  .dr-scroll{flex:1;overflow-y:auto}
+  .dr-lbl{font-size:10px;font-weight:800;letter-spacing:.13em;color:var(--ink-soft);padding:10px 18px 6px;text-transform:uppercase}
+  .dr-sep{border-top:1px solid var(--line);margin-top:10px;padding-top:14px}
+  .dr-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:10px 18px;background:none;border:none;color:var(--ink);font-family:var(--font-ui);font-size:14px;font-weight:600;cursor:pointer}
+  .dr-row svg{width:19px;height:19px;color:var(--ink-soft)}
+  .dr-row.active{color:var(--accent);background:linear-gradient(90deg,var(--accent-soft),transparent)}
+  .dr-row.active svg{color:var(--accent)}
+  .dr-trip{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:9px 18px;background:none;border:none;cursor:pointer;font-family:var(--font-ui)}
+  .dr-trip .sq{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-size:13px;font-weight:800;background:var(--kraft);color:var(--ink-soft);flex:0 0 auto}
+  .dr-trip.cur{background:linear-gradient(90deg,var(--accent-soft),transparent)}
+  .dr-trip.cur .sq{background:var(--accent);color:#fff}
+  .dr-trip .nm{font-size:14px;font-weight:650;color:var(--ink);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dr-trip .cd{display:block;font-size:10.5px;color:var(--ink-soft);font-weight:500;margin-top:1px}
+  .dr-trip.new .sq{background:none;border:1.5px dashed var(--kraft-line);color:var(--ink-soft)}
+  .dr-trip.new .nm{color:var(--ink-soft);font-weight:600}
+  .dr-foot{border-top:1px solid var(--line);padding:8px 0 calc(14px + env(safe-area-inset-bottom))}
+  .dr-switch{margin-left:auto;width:38px;height:22px;border-radius:11px;background:var(--kraft-line);position:relative;transition:.2s;flex:0 0 auto}
+  .dr-switch .knob{position:absolute;left:2.5px;top:2.5px;width:17px;height:17px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+  .dr-switch.on{background:var(--accent)}
+  .dr-switch.on .knob{transform:translateX(16px)}
+  .dr-me{display:flex;align-items:center;gap:10px;padding:10px 18px 0;margin-top:4px;border-top:1px solid var(--line)}
+  .dr-av{width:32px;height:32px;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-size:12px;font-weight:700}
+  .dr-who{font-size:13.5px;font-weight:650;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dr-out{background:none;border:none;color:var(--stamp);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-ui)}
 
   /* ── area sub-nav (Payments) ── */
   .subnav{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
@@ -635,8 +667,6 @@
     .trip-name{font-size:23px}
     .total-amt{font-size:18px}
     .total-lbl,.kicker{font-size:10px}
-    .bottom-nav{height:56px}
-    .bn-lbl{font-size:9px}
     .card{padding:14px}
     .card h2{font-size:15.5px}
     .card .sub{font-size:12px}
@@ -1118,11 +1148,7 @@
       <span id="groupCodeBadge" style="font-family:var(--font-mono);font-size:10px;
         background:rgba(252,251,247,.14);border:1px solid rgba(252,251,247,.2);border-radius:6px;
         padding:2px 7px;letter-spacing:.06em;"></span>
-      <span id="loggedUserLabel" style="font-size:10px;opacity:.65"></span>
-      <button class="gear" id="chatBtn" aria-label="Chat" style="margin-left:auto;position:relative">💬<span id="chatBadge" class="chat-badge hidden"></span></button>
-      <button id="headerSwitchBtn" style="background:rgba(252,251,247,.14);border:1px solid rgba(252,251,247,.22);border-radius:7px;color:rgba(252,251,247,.85);font-size:11px;font-weight:600;padding:3px 9px;cursor:pointer;font-family:inherit">⇄ Groups</button>
-      <button class="gear" id="gearBtn" aria-label="Settings">⚙</button>
-      <button class="logout-btn" id="logoutBtn">Log out</button>
+      <span id="loggedUserLabel" style="font-size:10px;opacity:.65;margin-left:auto"></span>
     </div>
     <div class="trip-name" id="tripName" contenteditable="true" spellcheck="false">SplitStack</div>
     <div class="total-row">
@@ -1329,31 +1355,34 @@
   </section>
 
   <nav class="bottom-nav" id="bottomNav">
-    <button class="bn-btn active" data-area="payments" aria-label="Payments">
-      <span class="bn-icon">🧾</span>
-      <span class="bn-lbl">Payments</span>
-    </button>
-    <button class="bn-btn" data-area="budget" aria-label="Budget">
-      <span class="bn-icon">📊</span>
-      <span class="bn-lbl">Budget</span>
-    </button>
-    <button class="bn-btn" data-area="savings" aria-label="Savings">
-      <span class="bn-icon">🐷</span>
-      <span class="bn-lbl">Savings</span>
-    </button>
-    <button class="bn-btn" data-area="tickets" aria-label="Tickets">
-      <span class="bn-icon">🎫</span>
-      <span class="bn-lbl">Tickets</span>
-    </button>
-    <button class="bn-btn" data-area="itinerary" aria-label="Itinerary">
-      <span class="bn-icon">🗺️</span>
-      <span class="bn-lbl">Plans</span>
-    </button>
-    <button class="bn-btn" data-area="crew" aria-label="Crew">
-      <span class="bn-icon">👥</span>
-      <span class="bn-lbl">Crew</span>
-    </button>
+    <button class="dk-btn" id="dockMenu" aria-label="Menu"><svg class="ico"><use href="#i-menu"/></svg><span>Menu</span></button>
+    <button class="dk-btn" id="dockHome" aria-label="Home"><svg class="ico"><use href="#i-home"/></svg><span>Home</span></button>
+    <button class="dk-add" id="dockAdd" aria-label="Add expense"><svg class="ico"><use href="#i-plus"/></svg></button>
+    <button class="dk-btn" id="dockChat" aria-label="Chat"><svg class="ico"><use href="#i-chat"/></svg><span>Chat</span><span id="chatBadge" class="chat-badge hidden"></span></button>
   </nav>
+
+  <div class="drawer-dim hidden" id="drawerDim"></div>
+  <aside class="drawer hidden" id="drawer" aria-label="Menu">
+    <div class="dr-head"><span class="dr-wm"><span class="ss">$</span>plit<span class="ss">$</span>tack</span><button class="dr-x" id="drawerClose" aria-label="Close">✕</button></div>
+    <div class="dr-scroll">
+      <div class="dr-lbl">Trips</div>
+      <div id="drawerTrips"></div>
+      <div class="dr-lbl dr-sep">This trip</div>
+      <nav id="drawerAreas">
+        <button class="dr-row" data-drarea="payments"><svg class="ico"><use href="#i-receipt"/></svg>Payments</button>
+        <button class="dr-row" data-drarea="budget"><svg class="ico"><use href="#i-chart"/></svg>Budget</button>
+        <button class="dr-row" data-drarea="savings"><svg class="ico"><use href="#i-vault"/></svg>Savings</button>
+        <button class="dr-row" data-drarea="tickets"><svg class="ico"><use href="#i-ticket"/></svg>Tickets</button>
+        <button class="dr-row" data-drarea="itinerary"><svg class="ico"><use href="#i-map"/></svg>Plans</button>
+        <button class="dr-row" data-drarea="crew"><svg class="ico"><use href="#i-crew"/></svg>Crew</button>
+      </nav>
+    </div>
+    <div class="dr-foot">
+      <button class="dr-row" id="drawerSettings"><svg class="ico"><use href="#i-gear"/></svg>Settings</button>
+      <div class="dr-row" id="drawerDark">Dark mode<span class="dr-switch" id="drawerDarkSwitch"><span class="knob"></span></span></div>
+      <div class="dr-me"><span class="dr-av" id="drawerAvatar"></span><span class="dr-who" id="drawerWho"></span><button class="dr-out" id="drawerLogout">Log out</button></div>
+    </div>
+  </aside>
 </div>
 
 <!-- ═══════════════════ GROUP CHAT ═══════════════════ -->
@@ -3436,7 +3465,7 @@ function renderItinerary() {
     el.innerHTML = `<div class="itin-empty">Nothing planned yet. Tap <strong>+ Add</strong> to start the itinerary.</div>`;
     return;
   }
-  let html = "", lastDay = " ";
+  let html = "", lastDay = " ";
   items.forEach(it => {
     const dayKey = it.day || "";
     if (dayKey !== lastDay) { html += `<div class="itin-day">${escHtml(fmtItinDay(it.day))}</div>`; lastDay = dayKey; }
@@ -4289,7 +4318,8 @@ const PAYMENT_TABS = ["settle","add","history","stats"];
 function switchArea(area) {
   if (!AREAS.includes(area)) area = "payments";
   ui.area = area;
-  document.querySelectorAll(".bn-btn").forEach(b => b.classList.toggle("active", b.dataset.area === area));
+  $("dockHome").classList.toggle("active", area === "payments");
+  renderDrawerActive(area);
 
   const inPayments = area === "payments";
   $("paymentsSubnav").classList.toggle("hidden", !inPayments);
@@ -4553,7 +4583,10 @@ function copyShare() { navigator.clipboard?.writeText(shareLink()); flashSaved()
 /* ══════════════════════════════════════════════════════════════
    WIRE UP EVENTS
    ══════════════════════════════════════════════════════════════ */
-document.querySelectorAll(".bn-btn").forEach(b => b.onclick = () => switchArea(b.dataset.area));
+$("dockMenu").onclick = openDrawer;
+$("dockHome").onclick = () => { closeDrawer(); switchArea("payments"); };
+$("dockAdd").onclick  = () => { closeDrawer(); switchTab("add"); };
+$("dockChat").onclick = () => { closeDrawer(); openChat(); };
 document.querySelectorAll("#paymentsSubnav .subnav-btn").forEach(b => b.onclick = () => setPaymentsTab(b.dataset.ptab));
 
 /* ── tickets wiring ── */
@@ -4580,8 +4613,42 @@ $("stackSave").onclick   = saveStack;
 $("stackDelete").onclick = deleteStack;
 $("stackKindSeg").querySelectorAll("[data-skind]").forEach(b => b.onclick = () => setStackKind(b.dataset.skind));
 
+/* ── drawer ── */
+function openDrawer(){ renderDrawer(); $("drawer").classList.remove("hidden"); $("drawerDim").classList.remove("hidden"); }
+function closeDrawer(){ $("drawer").classList.add("hidden"); $("drawerDim").classList.add("hidden"); }
+function renderDrawerActive(area){ document.querySelectorAll("#drawerAreas .dr-row").forEach(r => r.classList.toggle("active", r.dataset.drarea === area)); }
+async function renderDrawer(){
+  renderDrawerActive(ui.area);
+  /* trips */
+  const groups = await fetchMyGroups();
+  $("drawerTrips").innerHTML = groups.map(g => `
+    <button class="dr-trip${g.id===GROUP_ID?" cur":""}" data-drtrip="${g.id}" data-drcode="${escHtml(g.code||"")}">
+      <span class="sq">${escHtml((g.name||"?").charAt(0).toUpperCase())}</span>
+      <span class="nm">${escHtml(g.name||"Trip")}<span class="cd">${g.id===GROUP_ID?"current":"tap to switch"}</span></span>
+    </button>`).join("") +
+    `<button class="dr-trip new" id="drawerNewTrip"><span class="sq">+</span><span class="nm">New trip</span></button>`;
+  $("drawerTrips").querySelectorAll("[data-drtrip]").forEach(b => b.onclick = () => {
+    if (b.dataset.drtrip === GROUP_ID) { closeDrawer(); return; }
+    closeDrawer();
+    if (store) store.cleanup();
+    enterGroup(b.dataset.drtrip, b.dataset.drcode);
+  });
+  $("drawerNewTrip").onclick = () => { closeDrawer(); openCreateGroup(); };
+  /* identity */
+  const who = $("loggedUserLabel") ? $("loggedUserLabel").textContent : "";
+  $("drawerWho").textContent = who || "You";
+  $("drawerAvatar").textContent = (who||"?").split(/\s+/).map(w=>w.charAt(0)).join("").slice(0,2).toUpperCase();
+  /* dark switch state */
+  $("drawerDarkSwitch").classList.toggle("on", darkMode);
+}
+$("drawerClose").onclick = closeDrawer;
+$("drawerDim").onclick = closeDrawer;
+document.querySelectorAll("#drawerAreas .dr-row").forEach(r => r.onclick = () => { switchArea(r.dataset.drarea); closeDrawer(); });
+$("drawerSettings").onclick = () => { closeDrawer(); openSettings(); };
+$("drawerDark").onclick = () => { darkMode = !darkMode; applyTheme(darkMode); $("drawerDarkSwitch").classList.toggle("on", darkMode); };
+$("drawerLogout").onclick = logout;
+
 /* ── chat wiring ── */
-$("chatBtn").onclick   = openChat;
 $("chatClose").onclick = closeChat;
 $("chatSend").onclick  = sendChatMessage;
 $("chatInput").oninput = autoGrowChat;
@@ -4610,7 +4677,7 @@ $("newTodo").onkeydown = e => { if(e.key==="Enter"){e.preventDefault();addTodo()
 $("tripName").addEventListener("blur", e => { const v=e.target.textContent.trim()||"SplitStack"; e.target.textContent=v; if(store) store.setTripName(v); });
 $("tripName").addEventListener("keydown", e => { if(e.key==="Enter"){e.preventDefault();e.target.blur();} });
 const doSwitchGroup = () => { if(store) store.cleanup(); GROUP_ID=null; GROUP_CODE=null; location.hash=""; showGroupScreen(); };
-$("gearBtn").onclick   = () => {
+function openSettings() {
   $("shareUrl").value = shareLink();
   /* populate trip settings fields */
   $("setTripName").value    = state.tripName || "";
@@ -4621,7 +4688,7 @@ $("gearBtn").onclick   = () => {
   $("setBaseCurrency").value = state.baseCurrency || "EUR";
   $("settings").classList.remove("hidden");
   renderThemePicker();
-};
+}
 $("setClose").onclick       = () => $("settings").classList.add("hidden");
 $("settings").onclick       = e => { if (e.target === $("settings")) $("settings").classList.add("hidden"); };
 $("saveTripSettings").onclick = () => {
@@ -4639,8 +4706,6 @@ $("copyShare2").onclick= copyShare;
 $("copyInviteBtn").onclick = copyShare;
 $("switchGroup").onclick     = doSwitchGroup;
 $("leaveGroupBtn").onclick   = leaveGroup;
-$("headerSwitchBtn").onclick = doSwitchGroup;
-$("logoutBtn").onclick = logout;
 
 /* settle-up modal */
 $("settleUpClose").onclick = () => $("settleUpModal").classList.add("hidden");
