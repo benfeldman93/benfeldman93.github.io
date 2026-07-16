@@ -24,7 +24,7 @@
   }
   .ico{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   html{-webkit-tap-highlight-color:transparent}
-  body{overscroll-behavior-y:none;-webkit-font-smoothing:antialiased}
+  body{font-family:var(--font-ui);color:var(--ink);background:var(--paper);overscroll-behavior-y:none;-webkit-font-smoothing:antialiased}
   /* ── app themes (accent-only; compose with dark mode) ── */
   [data-app-theme="travel"]  {--accent:#2447E8;--accent-soft:#E9EDFB}
   [data-app-theme="dinner"]  {--accent:#A8332E;--accent-soft:#F7E8E7}
@@ -182,6 +182,39 @@
   .dr-av{width:32px;height:32px;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-size:12px;font-weight:700}
   .dr-who{font-size:13.5px;font-weight:650;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .dr-out{background:none;border:none;color:var(--stamp);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-ui)}
+  /* ── home widgets ── */
+  #homeFeed{display:flex;flex-direction:column;gap:12px}
+  .wg{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:15px 16px;cursor:pointer;box-shadow:var(--shadow);transition:.12s}
+  .wg:active{transform:scale(.985)}
+  .wg-hd{display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:9px;color:var(--ink-soft)}
+  .wg-hd svg{width:15px;height:15px}
+  .wg-hd .go{margin-left:auto;color:var(--kraft-line);font-size:15px;font-weight:400}
+  .wg-balance .wg-hd{color:var(--accent)}
+  .wg-budget .wg-hd{color:var(--stamp)}
+  .wg-today .wg-hd{color:var(--green)}
+  .wg-amt{font-family:var(--font-mono);font-size:27px;font-weight:700;letter-spacing:-.01em}
+  .wg-amt.pos{color:var(--green)}
+  .wg-amt.neg{color:var(--stamp)}
+  .wg-row{display:flex;align-items:center;justify-content:space-between;margin-top:7px}
+  .wg-sub{font-size:12px;color:var(--ink-soft)}
+  .wg-cta{background:var(--accent);color:#fff;font-size:11.5px;font-weight:700;border:none;border-radius:99px;padding:7px 14px;cursor:pointer;font-family:var(--font-ui)}
+  .wg-budget{display:flex;gap:14px;align-items:center}
+  .wg-budget .bd{flex:1;min-width:0}
+  .wg-ring{position:relative;width:56px;height:56px;flex:0 0 auto}
+  .wg-ring svg{transform:rotate(-90deg)}
+  .wg-ring .pc{position:absolute;inset:0;display:grid;place-items:center;font-size:12.5px;font-weight:800}
+  .wg-val{font-size:14.5px;font-weight:700}
+  .wg-val span{color:var(--ink-soft);font-weight:500}
+  .wg-warn{font-size:11px;color:var(--stamp);font-weight:600;margin-top:3px}
+  .wg-it{display:flex;gap:10px;align-items:baseline}
+  .wg-it+.wg-it{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+  .wg-it .tm{font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--green);width:44px;flex:0 0 auto}
+  .wg-it .ti{font-size:13.5px;font-weight:650}
+  .wg-it .lo{font-size:11px;color:var(--ink-soft);margin-top:1px}
+  .wg-nudge{display:flex;align-items:center;gap:12px}
+  .wg-nudge svg{width:22px;height:22px;color:var(--ink-soft);flex:0 0 auto}
+  .wg-nudge .t{font-size:14px;font-weight:700}
+  .wg-nudge .x{font-size:12px;color:var(--ink-soft);margin-top:1px}
 
   /* ── area sub-nav (Payments) ── */
   .subnav{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
@@ -1171,6 +1204,10 @@
     <button type="button" class="subnav-btn" data-ptab="stats">Stats</button>
   </div>
 
+  <section id="panel-home" class="hidden">
+    <div id="homeFeed"></div>
+  </section>
+
   <section id="panel-settle">
     <div class="card hidden" id="myCard">
       <h2 id="myCardTitle">Your tab</h2>
@@ -1707,7 +1744,7 @@ function showApp() {
   $("authScreen").classList.add("hidden");
   $("groupScreen").classList.add("hidden");
   $("app").classList.remove("hidden");
-  switchArea("payments");
+  switchArea("home");
   $("groupCodeBadge").textContent  = GROUP_CODE;
   $("shareUrl").value              = shareLink();
   $("inviteLinkInput").value       = shareLink();
@@ -2394,7 +2431,7 @@ function settlements() {
 function render() {
   $("tripName").textContent = state.tripName;
   $("totalSpent").textContent = fmtUSD(state.expenses.reduce((s,e)=>s+e.amountUSD,0));
-  renderMyCard(); renderSettle(); renderNet(); renderHistory(); renderCrew(); renderTodos(); renderAddForm(); renderTickets(); renderBudget(); renderItinerary();
+  renderMyCard(); renderSettle(); renderNet(); renderHistory(); renderCrew(); renderTodos(); renderAddForm(); renderTickets(); renderBudget(); renderItinerary(); renderHome();
   if (ui.tab === "stats") renderStats();
 }
 function empty(big,t,x){ return `<div class="empty"><div class="big">${big}</div><div class="t">${t}</div><div class="x">${x}</div></div>`; }
@@ -3358,6 +3395,136 @@ let budgetSpent = {}, budgetTotalSpent = 0;
 let budgetSaveTimer = null;
 const bgNum = v => { const n = parseFloat(String(v).replace(/[^0-9.]/g,"")); return isNaN(n)?null:n; };
 
+/* ══════════════════════════════════════════════════════════════
+   HOME  (widget dashboard)
+   ══════════════════════════════════════════════════════════════ */
+function renderHome() {
+  const el = $("homeFeed"); if (!el) return;
+  el.innerHTML = homeBalanceWidget() + homeBudgetWidget() + homeTodayWidget();
+  /* wiring */
+  el.querySelectorAll("[data-go]").forEach(w => w.onclick = e => {
+    if (e.target.closest("[data-stop]")) return;
+    switchArea(w.dataset.go);
+  });
+  const st = el.querySelector("#homeSettleBtn");
+  if (st) st.onclick = () => { switchArea("payments"); setPaymentsTab("settle"); };
+  const ad = el.querySelector("#homeAddBtn");
+  if (ad) ad.onclick = () => switchTab("add");
+}
+
+function homeBalanceWidget() {
+  if (state.expenses.length === 0) {
+    return `<div class="wg wg-nudge" data-go="payments">
+      <svg class="ico"><use href="#i-receipt"/></svg>
+      <div style="flex:1;min-width:0"><div class="t">No expenses yet</div><div class="x">Scan a receipt or add one to get rolling</div></div>
+      <button class="wg-cta" id="homeAddBtn" data-stop>Add expense</button>
+    </div>`;
+  }
+  const net = round2(netBalances()[meId] || 0);
+  const s = settlements();
+  const oweMe = s.filter(p => p.to === meId).length;
+  const iOwe  = s.filter(p => p.from === meId).length;
+  let amt, cls = "";
+  if (net > 0.009)       { amt = "+" + fmtUSD(net);  cls = " pos"; }
+  else if (net < -0.009) { amt = "−" + fmtUSD(-net); cls = " neg"; }
+  else                   { amt = fmtUSD(0); }
+  let sub;
+  if (oweMe && iOwe)      sub = `${oweMe} ${oweMe===1?"person owes":"people owe"} you · you owe ${iOwe} ${iOwe===1?"person":"people"}`;
+  else if (oweMe)         sub = `${oweMe} ${oweMe===1?"person owes":"people owe"} you`;
+  else if (iOwe)          sub = `you owe ${iOwe} ${iOwe===1?"person":"people"}`;
+  else                    sub = "you're settled";
+  if (net <= 0.009 && net >= -0.009 && !oweMe && !iOwe) sub = "all square";
+  const btn = (s.length > 0 && (oweMe || iOwe))
+    ? `<button class="wg-cta" id="homeSettleBtn" data-stop>Settle up</button>` : "";
+  return `<div class="wg wg-balance" data-go="payments">
+    <div class="wg-hd"><svg class="ico"><use href="#i-receipt"/></svg>Balance<span class="go">›</span></div>
+    <div class="wg-amt${cls}">${amt}</div>
+    <div class="wg-row"><span class="wg-sub">${escHtml(sub)}</span>${btn}</div>
+  </div>`;
+}
+
+function homeBudgetWidget() {
+  const total = Number(state.budget?.total) || 0;
+  const spent = state.expenses.reduce((s,e) => s + (e.amountUSD||0), 0);
+  if (total <= 0) {
+    return `<div class="wg wg-nudge" data-go="budget">
+      <svg class="ico"><use href="#i-chart"/></svg>
+      <div style="flex:1;min-width:0"><div class="t">Set a trip budget</div><div class="x">Track spending against a cap for this trip</div></div>
+    </div>`;
+  }
+  const pct = Math.min(100, Math.round(spent/total*100));
+  const dash = (Math.min(1, spent/total) * 144.5).toFixed(1);
+  /* per-category spend, same key fallback as drawBudget */
+  const knownKeys = new Set(CATEGORIES.map(c => c.key));
+  const catSpent = {};
+  state.expenses.forEach(e => {
+    let k = e.category || "other"; if (!knownKeys.has(k)) k = "other";
+    catSpent[k] = (catSpent[k]||0) + (e.amountUSD||0);
+  });
+  let worst = null;
+  Object.entries(state.budget.cats || {}).forEach(([k, cap]) => {
+    const c = Number(cap);
+    if (!(c > 0)) return;
+    const ratio = (catSpent[k]||0) / c;
+    if (ratio >= 0.75 && (!worst || ratio > worst.ratio)) worst = {key:k, ratio};
+  });
+  let subLine;
+  if (worst) {
+    const label = (CATEGORIES.find(c => c.key === worst.key) || {}).label || worst.key;
+    subLine = worst.ratio > 1
+      ? `<div class="wg-warn">${escHtml(label)} is over its cap</div>`
+      : `<div class="wg-warn">${escHtml(label)} is at ${Math.round(worst.ratio*100)}% of its cap</div>`;
+  } else {
+    subLine = total - spent >= 0
+      ? `<div class="wg-sub" style="margin-top:3px">${fmtUSD(total-spent)} left</div>`
+      : `<div class="wg-warn">${fmtUSD(spent-total)} over</div>`;
+  }
+  return `<div class="wg wg-budget" data-go="budget">
+    <div class="bd">
+      <div class="wg-hd"><svg class="ico"><use href="#i-chart"/></svg>Budget<span class="go">›</span></div>
+      <div class="wg-val">${fmtUSD(spent)} <span>of ${fmtUSD(total)}</span></div>
+      ${subLine}
+    </div>
+    <div class="wg-ring">
+      <svg viewBox="0 0 54 54" width="56" height="56"><circle cx="27" cy="27" r="23" fill="none" stroke="var(--kraft)" stroke-width="6"/><circle cx="27" cy="27" r="23" fill="none" stroke="var(--accent)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${dash} 144.5"/></svg>
+      <span class="pc">${pct}%</span>
+    </div>
+  </div>`;
+}
+
+function homeTodayWidget() {
+  const items = [...(state.itinerary||[])].sort((a,b) =>
+    (a.day||"").localeCompare(b.day||"") || (a.position||0)-(b.position||0));
+  const today = todayISO();
+  let list = items.filter(it => it.day === today);
+  let label = "Today";
+  if (!list.length) {
+    const nextDay = items.map(it => it.day).filter(d => d && d > today).sort()[0];
+    if (nextDay) {
+      list = items.filter(it => it.day === nextDay);
+      label = "Next up · " + fmtItinDay(nextDay);
+    }
+  }
+  if (!list.length) {
+    return `<div class="wg wg-nudge" data-go="itinerary">
+      <svg class="ico"><use href="#i-map"/></svg>
+      <div style="flex:1;min-width:0"><div class="t">Nothing planned yet</div><div class="x">Sketch the day-by-day in Plans</div></div>
+    </div>`;
+  }
+  const rows = list.slice(0,3).map(it => `
+    <div class="wg-it">
+      <span class="tm">${it.time ? escHtml(fmtTicketTime(it.time)) : ""}</span>
+      <div style="flex:1;min-width:0">
+        <div class="ti">${escHtml(it.title||"Untitled")}</div>
+        ${it.location ? `<div class="lo">${escHtml(it.location)}</div>` : ""}
+      </div>
+    </div>`).join("");
+  return `<div class="wg wg-today" data-go="itinerary">
+    <div class="wg-hd"><svg class="ico"><use href="#i-map"/></svg>${escHtml(label)}<span class="go">›</span></div>
+    ${rows}
+  </div>`;
+}
+
 function renderBudget() {
   if (!$("budgetTotalCard")) return;
   budgetWork = JSON.parse(JSON.stringify(state.budget || {}));
@@ -4311,21 +4478,21 @@ function exportCSV() {
 
 
 /* Top level: the six trip areas shown in the bottom nav. */
-const AREAS = ["payments","budget","savings","tickets","itinerary","crew"];
+const AREAS = ["home","payments","budget","savings","tickets","itinerary","crew"];
 /* Sub-tabs inside the Payments area. */
 const PAYMENT_TABS = ["settle","add","history","stats"];
 
 function switchArea(area) {
   if (!AREAS.includes(area)) area = "payments";
   ui.area = area;
-  $("dockHome").classList.toggle("active", area === "payments");
+  $("dockHome").classList.toggle("active", area === "home");
   renderDrawerActive(area);
 
   const inPayments = area === "payments";
   $("paymentsSubnav").classList.toggle("hidden", !inPayments);
 
   /* hide every panel, then show what this area needs */
-  ["settle","add","history","stats","budget","savings","tickets","itinerary","crew"].forEach(p => {
+  ["home","settle","add","history","stats","budget","savings","tickets","itinerary","crew"].forEach(p => {
     const el = $("panel-" + p); if (el) el.classList.add("hidden");
   });
 
@@ -4334,6 +4501,7 @@ function switchArea(area) {
   } else {
     const el = $("panel-" + area); if (el) el.classList.remove("hidden");
   }
+  if (area === "home") renderHome();
   if (area === "savings") {
     if (!savingsLoaded) loadSavings().then(renderSavings);
     else renderSavings();
@@ -4584,7 +4752,7 @@ function copyShare() { navigator.clipboard?.writeText(shareLink()); flashSaved()
    WIRE UP EVENTS
    ══════════════════════════════════════════════════════════════ */
 $("dockMenu").onclick = openDrawer;
-$("dockHome").onclick = () => { closeDrawer(); switchArea("payments"); };
+$("dockHome").onclick = () => { closeDrawer(); switchArea("home"); };
 $("dockAdd").onclick  = () => { closeDrawer(); switchTab("add"); };
 $("dockChat").onclick = () => { closeDrawer(); openChat(); };
 document.querySelectorAll("#paymentsSubnav .subnav-btn").forEach(b => b.onclick = () => setPaymentsTab(b.dataset.ptab));
